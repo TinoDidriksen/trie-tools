@@ -359,6 +359,7 @@ public:
 							n = owner->nodes[n].children.front().second;
 							path.push_back(n);
 						}
+						goto plus_return;
 					}
 				}
 				else {
