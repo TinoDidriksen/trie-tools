@@ -2,20 +2,20 @@
 * Copyright (C) 2013, Tino Didriksen Consult
 * Developed by Tino Didriksen <consult@tinodidriksen.com>
 *
-* This file is part of kalspell
+* This file is part of trie-tools
 *
-* kalspell is free software: you can redistribute it and/or modify
+* trie-tools is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
 *
-* kalspell is distributed in the hope that it will be useful,
+* trie-tools is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with kalspell.  If not, see <http://www.gnu.org/licenses/>.
+* along with trie-tools.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifdef _MSC_VER
@@ -74,7 +74,7 @@ bool firstuse = true;
 size_t cw = 0;
 
 void showLastError(const std::wstring& err) {
-	std::wstring msg = L"kalspell error location: ";
+	std::wstring msg = L"trie-tools-foma error location: ";
 	msg += err;
 	msg += L"\n\n";
 #ifdef _MSC_VER
@@ -101,7 +101,7 @@ bool checkValidWord(const tdc::u16string& u16buffer) {
 		utf8::utf16to8(u16buffer.begin(), u16buffer.end(), std::back_inserter(cbuffer));
 	}
 	catch(...) {
-		std::string msg("kalspell error: checkValidWord utf16:");
+		std::string msg("trie-tools-foma error: checkValidWord utf16:");
 		msg.append(u16buffer.begin(), u16buffer.end());
 		msg += " utf8:";
 		msg += cbuffer;
@@ -195,7 +195,7 @@ void init(const std::string& fst, const std::string& dict=std::string()) {
 		&piProcInfo);
 
 	if (!bSuccess) {
-		std::wstring msg = L"kalspell could not start flookup.exe!\n\n";
+		std::wstring msg = L"trie-tools-foma could not start flookup.exe!\n\n";
 		msg += L"Cmdline: ";
 		msg += cmdline.c_str();
 		msg += '\n';
@@ -218,7 +218,7 @@ void init(const std::string& fst, const std::string& dict=std::string()) {
 
 	child = popen_plus(cmdline.c_str());
 	if (child == 0) {
-		std::string msg = "kalspell could not start flookup!\n";
+		std::string msg = "trie-tools-foma could not start flookup!\n";
 		msg += "Cmdline: ";
 		msg += cmdline.c_str();
 		msg += '\n';
@@ -231,7 +231,7 @@ void init(const std::string& fst, const std::string& dict=std::string()) {
 
 	const char illu[] = "illu";
 	if (!checkValidWord(tdc::u16string(illu, illu+sizeof(illu)-1))) {
-		std::wstring msg = L"kalspell could not verify 'illu' as a correct word!\n";
+		std::wstring msg = L"trie-tools-foma could not verify 'illu' as a correct word!\n";
 		msg += L"Cmdline: ";
 		msg.append(cmdline.begin(), cmdline.end());
 		msg += '\n';
@@ -404,9 +404,10 @@ int main(int argc, char *argv[]) {
 
 	init(args[1], args[2]);
 
-	std::cout << "@(#) International Ispell Version 3.1.20 (but really kalspell)" << std::endl;
+	std::cout << "@(#) International Ispell Version 3.1.20 (but really trie-tools-foma)" << std::endl;
 
 	std::string line8;
+	std::string out8;
 	tdc::u16string line16;
 	while (std::getline(std::cin, line8)) {
 		while (!line8.empty() && std::isspace(line8[line8.size()-1])) {
@@ -416,30 +417,50 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 
-		line16.clear();
-		utf8::utf8to16(line8.begin(), line8.end(), std::back_inserter(line16));
-
-		if (is_correct(line16)) {
-			std::cout << "*\n" << std::endl;
-			continue;
-		}
-
-		const std::vector<tdc::u16string>& alts = find_alternatives(line16);
-		if (alts.empty()) {
-			std::cout << "# " << line8 << " 0\n" << std::endl;
-			continue;
-		}
-
-		std::cout << "& " << line8 << " " << alts.size() << " 0: ";
-		for (size_t i=0 ; i<alts.size() ; ++i) {
-			if (i != 0) {
-				std::cout << ", ";
+		size_t b = 0, e = 0;
+		const char *spaces = " \t\r\n";
+		for (;;) {
+			b = line8.find_first_not_of(spaces, e);
+			e = line8.find_first_of(spaces, b);
+			if (b == std::string::npos) {
+				break;
 			}
-			line8.clear();
-			utf8::utf16to8(alts[i].begin(), alts[i].end(), std::back_inserter(line8));
-			std::cout << line8;
+
+			line16.clear();
+			if (e == std::string::npos) {
+				utf8::utf8to16(line8.begin()+b, line8.end(), std::back_inserter(line16));
+			}
+			else {
+				utf8::utf8to16(line8.begin()+b, line8.begin()+e, std::back_inserter(line16));
+			}
+
+			if (is_correct(line16)) {
+				std::cout << "*" << std::endl;
+				continue;
+			}
+
+			const std::vector<tdc::u16string>& alts = find_alternatives(line16);
+			if (alts.empty()) {
+				std::cout << "# " << line8.substr(b, e) << " " << b << std::endl;
+				continue;
+			}
+
+			std::cout << "& " << line8.substr(b, e) << " " << alts.size() << " " << b << ": ";
+			for (size_t i=0 ; i<alts.size() ; ++i) {
+				if (i != 0) {
+					std::cout << ", ";
+				}
+				out8.clear();
+				utf8::utf16to8(alts[i].begin(), alts[i].end(), std::back_inserter(out8));
+				std::cout << out8;
+			}
+			std::cout << std::endl;
+
+			if (e == std::string::npos) {
+				break;
+			}
 		}
-		std::cout << "\n" << std::endl;
+		std::cout << std::endl;
 	}
 
 	if (!firstuse) {
