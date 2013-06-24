@@ -12,8 +12,13 @@
  **    May you share freely, never taking more than you give.
  **/
 
-#ifndef POPEN_PLUS_H
-#define POPEN_PLUS_H
+#pragma once
+#ifndef POPEN_PLUS_H_f28c53c53a48d38efafee7fb7004a01faaac9e22
+#define POPEN_PLUS_H_f28c53c53a48d38efafee7fb7004a01faaac9e22
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <sys/types.h>
 #include <fcntl.h>
@@ -43,5 +48,9 @@ int popen_plus_kill(popen_plus_process *process);
 int popen_plus_kill_by_id(int process_id);
 int popen_plus_terminate(popen_plus_process *process);
 int popen_plus_terminate_with_id(int process_id);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

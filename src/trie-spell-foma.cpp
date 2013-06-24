@@ -44,9 +44,6 @@
 	#include <popen_plus.h>
 #endif
 
-#define debugp
-#define p
-
 #ifdef _MSC_VER
 HANDLE g_hChildStd_IN_Rd = 0;
 HANDLE g_hChildStd_IN_Wr = 0;
@@ -56,7 +53,15 @@ HANDLE g_hChildStd_OUT_Wr = 0;
 popen_plus_process *child = 0;
 #endif
 
-typedef std::unordered_map<tdc::u16string,bool> valid_words_t;
+template<typename T>
+struct hash_any_string {
+	size_t operator()(const T& str) const {
+		std::wstring wstr(str.begin(), str.end());
+		return std::hash<std::wstring>()(wstr);
+	}
+};
+
+typedef std::unordered_map<tdc::u16string,bool,hash_any_string<tdc::u16string>> valid_words_t;
 valid_words_t valid_words;
 
 typedef tdc::trie<tdc::u16string> dict_t;
@@ -93,9 +98,6 @@ void showLastError(const std::wstring& err) {
 }
 
 bool checkValidWord(const tdc::u16string& u16buffer) {
-	debugp p("checkValidWord");
-	p(u16buffer);
-
 	cbuffer.clear();
 	try {
 		utf8::utf16to8(u16buffer.begin(), u16buffer.end(), std::back_inserter(cbuffer));
@@ -251,11 +253,8 @@ bool is_correct(const tdc::u16string& word) {
 	words[0].u16buffer.resize(0);
 	words[0].start = ichStart;
 	words[0].count = cchUse;
-	p(words[0].start);
-	p(words[0].count);
 	words[0].u16buffer.append(pwsz+ichStart, pwsz+ichStart+cchUse);
 	cw = 1;
-	p(words[cw-1].u16buffer);
 
 	if (cchUse > 1) {
 		size_t count = cchUse;
@@ -296,7 +295,6 @@ bool is_correct(const tdc::u16string& word) {
 	}
 
 	for (size_t i=0 ; i<cw ; ++i) {
-		p(words[i].u16buffer);
 		valid_words_t::iterator it = valid_words.find(words[i].u16buffer);
 
 		if (it == valid_words.end()) {
