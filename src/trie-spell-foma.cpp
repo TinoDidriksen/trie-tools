@@ -454,11 +454,11 @@ int main(int argc, char *argv[]) {
 
 			const std::vector<tdc::u16string>& alts = find_alternatives(line16);
 			if (alts.empty()) {
-				std::cout << "# " << line8.substr(b, e) << " " << b << std::endl;
+				std::cout << "# " << line8.substr(b, e-b) << " " << b << std::endl;
 				continue;
 			}
 
-			std::cout << "& " << line8.substr(b, e) << " " << alts.size() << " " << b << ": ";
+			std::cout << "& " << line8.substr(b, e-b) << " " << alts.size() << " " << b << ": ";
 			for (size_t i=0 ; i<alts.size() ; ++i) {
 				if (i != 0) {
 					std::cout << ", ";
