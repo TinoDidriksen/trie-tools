@@ -217,6 +217,7 @@ void init(const std::string& fst, const std::string& dict=std::string()) {
 #else
 	std::string cmdline("flookup -b -x '");
 	cmdline += fst;
+	cmdline += '\'';
 
 	child = popen_plus(cmdline.c_str());
 	if (child == 0) {
@@ -231,18 +232,32 @@ void init(const std::string& fst, const std::string& dict=std::string()) {
 	}
 #endif
 
-	const char illu[] = "illu";
-	if (!checkValidWord(tdc::u16string(illu, illu+sizeof(illu)-1))) {
-		std::wstring msg = L"trie-tools-foma could not verify 'illu' as a correct word!\n";
-		msg += L"Cmdline: ";
-		msg.append(cmdline.begin(), cmdline.end());
-		msg += '\n';
-		std::cerr << std::string(msg.begin(), msg.end()) << std::endl;
+	std::ifstream dictf(dict.c_str(), std::ios::binary);
+	if (!dictf) {
+		std::cerr << "Could not open trie " << dict << " for reading!" << std::endl;
 		throw -1;
 	}
-
-	std::ifstream dictf(dict.c_str(), std::ios::binary);
 	dicts[0].unserialize(dictf);
+
+	bool working = false;
+	size_t i = 0;
+	for (dict_t::const_iterator it = dicts[0].begin() ; it != dicts[0].end() ; ++it) {
+		if (checkValidWord(*it)) {
+			working = true;
+			break;
+		}
+		if (++i > 10) {
+			break;
+		}
+	}
+	if (!working) {
+		std::string msg = "trie-tools-foma could not verify any of the 10 first words as being correct!\n";
+		msg += "Cmdline: ";
+		msg += cmdline;
+		msg += '\n';
+		std::cerr << msg << std::endl;
+		throw -1;
+	}
 }
 
 bool is_correct(const tdc::u16string& word) {
