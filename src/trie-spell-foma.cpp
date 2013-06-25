@@ -253,7 +253,7 @@ void init(const std::string& fst, const std::string& dict=std::string()) {
 	if (!working) {
 		std::string msg = "trie-tools-foma could not verify any of the 10 first words as being correct!\n";
 		msg += "Cmdline: ";
-		msg += cmdline;
+		msg.append(cmdline.begin(), cmdline.end());
 		msg += '\n';
 		std::cerr << msg << std::endl;
 		throw -1;

@@ -399,7 +399,7 @@ public:
 
 		out.write(reinterpret_cast<const char*>(&compressed), sizeof(compressed));
 
-		size_t value = nodes.size();
+		Count value = static_cast<Count>(nodes.size());
 		out.write(reinterpret_cast<const char*>(&value), sizeof(value));
 		for (size_t n=0 ; n<nodes.size() ; ++n) {
 			serializer.serialize(out, nodes[n].self);
@@ -408,7 +408,7 @@ public:
 			out.write(reinterpret_cast<const char*>(&nodes[n].terminal), sizeof(nodes[n].terminal));
 		}
 		for (size_t n=0 ; n<nodes.size() ; ++n) {
-			size_t value = nodes[n].children.size();
+			Count value = static_cast<Count>(nodes[n].children.size());
 			out.write(reinterpret_cast<const char*>(&value), sizeof(value));
 		}
 		for (size_t n=0 ; n<nodes.size() ; ++n) {
@@ -417,7 +417,7 @@ public:
 			}
 		}
 
-		value = children.size();
+		value = static_cast<Count>(children.size());
 		out.write(reinterpret_cast<const char*>(&value), sizeof(value));
 		for (size_t c=0 ; c<children.size() ; ++c) {
 			out.write(reinterpret_cast<const char*>(&children[c].second), sizeof(children[c].second));
@@ -441,7 +441,7 @@ public:
 
 		in.read(reinterpret_cast<char*>(&compressed), sizeof(compressed));
 
-		size_t z;
+		Count z;
 		in.read(reinterpret_cast<char*>(&z), sizeof(z));
 		nodes.resize(z);
 		for (size_t n=0 ; n<z ; ++n) {
@@ -451,7 +451,7 @@ public:
 			in.read(reinterpret_cast<char*>(&nodes[n].terminal), sizeof(nodes[n].terminal));
 		}
 		for (size_t n=0 ; n<z ; ++n) {
-			size_t c;
+			Count c;
 			in.read(reinterpret_cast<char*>(&c), sizeof(c));
 			nodes[n].children.resize(c);
 		}
