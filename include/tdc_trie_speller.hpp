@@ -110,7 +110,7 @@ public:
 		}
 
 		for (size_t i=0 ; i<cw ; ++i) {
-			valid_words_t::iterator it = valid_words.find(words[i].u16buffer);
+			typename valid_words_t::iterator it = valid_words.find(words[i].u16buffer);
 
 			if (it == valid_words.end()) {
 				bool valid = is_correct_word(words[i].u16buffer);
@@ -122,7 +122,7 @@ public:
 					u16buffer.reserve(words[i].u16buffer.length());
 					std::transform(words[i].u16buffer.begin(), words[i].u16buffer.end(), std::back_inserter(u16buffer), towlower);
 					// Don't try again if the lower cased variant has already been tried
-					valid_words_t::iterator itl = valid_words.find(u16buffer);
+					typename valid_words_t::iterator itl = valid_words.find(u16buffer);
 					if (itl != valid_words.end()) {
 						it = itl;
 					}
@@ -154,7 +154,7 @@ public:
 		std::vector<String> alts;
 
 		if (is_correct(word) != true) {
-			dict_t::query_type qpDict, qpFly;
+			typename dict_t::query_type qpDict, qpFly;
 			if (words[cw-1].u16buffer.length() <= 3) {
 				qpDict = dicts[0].query(words[cw-1].u16buffer, 1);
 				qpFly = dicts[1].query(words[cw-1].u16buffer, 1);
@@ -164,7 +164,7 @@ public:
 				qpFly = dicts[1].query(words[cw-1].u16buffer, 2);
 			}
 			for (size_t i=1 ; i<3 ; ++i) {
-				for (dict_t::query_type::iterator it=qpDict.begin() ; it != qpDict.end() ; ++it) {
+				for (typename dict_t::query_type::iterator it=qpDict.begin() ; it != qpDict.end() ; ++it) {
 					if (it->first == words[cw-1].u16buffer) {
 						alts.clear();
 						goto find_alternatives_end;
@@ -183,7 +183,7 @@ public:
 						}
 					}
 				}
-				for (dict_t::query_type::iterator it=qpFly.begin() ; it != qpFly.end() ; ++it) {
+				for (typename dict_t::query_type::iterator it=qpFly.begin() ; it != qpFly.end() ; ++it) {
 					if (it->first == words[cw-1].u16buffer) {
 						alts.clear();
 						goto find_alternatives_end;
