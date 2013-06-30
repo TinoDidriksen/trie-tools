@@ -545,21 +545,22 @@ public:
 	}
 
 	const_iterator find(const String& entry) const {
-		const_iterator rv(this, static_cast<Count>(nodes.size()));
+		const_iterator rv = end();
 		typename children_type::const_iterator child = findchild(children, entry[0]);
 		if (child != children.end()) {
-			rv.n = child->second;
+			rv.path.clear();
+			rv.path.push_back(child->second);
 			for (size_t i=1 ; i<entry.size() ; ++i) {
 				Count second = child->second;
 				child = findchild(nodes[second].children, entry[i]);
 				if (child == nodes[second].children.end()) {
-					rv.n = static_cast<Count>(nodes.size());
+					rv = end();
 					break;
 				}
-				rv.n = child->second;
+				rv.path.push_back(child->second);
 			}
-			if (rv.n < nodes.size() && nodes[rv.n].terminal == false) {
-				rv.n = static_cast<Count>(nodes.size());
+			if (!rv.path.empty() && nodes[rv.path.back()].terminal == false) {
+				rv = end();
 			}
 		}
 		return rv;
