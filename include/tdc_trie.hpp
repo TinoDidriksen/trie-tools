@@ -387,6 +387,7 @@ public:
 	friend class const_iterator;
 
 	typedef std::map<String,size_t> query_type;
+	typedef String value_type;
 
 	trie() : compressed(false) {
 	}
@@ -571,8 +572,8 @@ public:
 			return;
 		}
 		const_iterator it = find(entry);
-		if (it.n != nodes.size()) {
-			nodes[it.n].terminal = false;
+		if (it != end()) {
+			nodes[it.path.back()].terminal = false;
 		}
 	}
 
