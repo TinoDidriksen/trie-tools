@@ -17,10 +17,16 @@ else()
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3")
 	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/posix")
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
-	else()
+
+	# Enable C++11 if possible
+	option(OPT_CXX11 "Set to OFF to disable use of C++11" ON)
+	if(OPT_CXX11 AND
+	((CMAKE_COMPILER_IS_GNUCXX AND NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 4.6) OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 3.1)))
+		message(STATUS "Enabling C++11 for ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+	endif()
+	if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 	endif()
 endif()
 
