@@ -18,14 +18,6 @@
 * along with trie-tools.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef _MSC_VER
-    #define _SECURE_SCL 0
-    #define _CRT_SECURE_NO_DEPRECATE 1
-    #define WIN32_LEAN_AND_MEAN
-    #define VC_EXTRALEAN
-    #define NOMINMAX
-#endif
-
 #include <tdc_trie.hpp>
 #include <utf8.h>
 #include <iostream>
