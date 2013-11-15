@@ -127,19 +127,19 @@ public:
 
 		if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0)) {
 			showLastError(L"SpellerInit CreatePipe 1");
-			return;
+			throw -1;
 		}
 		if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0)) {
 			showLastError(L"SpellerInit SetHandleInformation 1");
-			return;
+			throw -1;
 		}
 		if (!CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0)) {
 			showLastError(L"SpellerInit CreatePipe 2");
-			return;
+			throw -1;
 		}
 		if (!SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0)) {
 			showLastError(L"SpellerInit SetHandleInformation 2");
-			return;
+			throw -1;
 		}
 
 		PROCESS_INFORMATION piProcInfo = {0};
@@ -178,7 +178,7 @@ public:
 			msg += '\n';
 			LocalFree(fmt);
 			std::cerr << std::string(msg.begin(), msg.end()) << std::endl;
-			return;
+			throw -1;
 		}
 		else {
 			CloseHandle(piProcInfo.hProcess);

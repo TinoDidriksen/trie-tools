@@ -124,6 +124,7 @@ public:
 					// Don't try again if the lower cased variant has already been tried
 					typename valid_words_t::iterator itl = valid_words.find(u16buffer);
 					if (itl != valid_words.end()) {
+						it->second = itl->second;
 						it = itl;
 					}
 					else {
@@ -132,7 +133,7 @@ public:
 						it = valid_words.insert(std::make_pair(u16buffer,valid)).first;
 					}
 
-					if (valid) {
+					if (it->second) {
 						dicts[1].add(words[i].u16buffer);
 						dicts[1].add(u16buffer);
 					}
