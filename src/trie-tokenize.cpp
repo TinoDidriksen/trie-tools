@@ -90,7 +90,7 @@ void tokenize(std::istream& in, trie_t& trie) {
 				}
 				output.second += ' ';
 				if (stack[i].trt.second == false) {
-					++output.first;
+					output.first += stack[i].end - stack[i].begin;
 					output.second += '*';
 				}
 				utf8::utf16to8(line16.begin() + stack[i].begin, line16.begin() + stack[i].end, std::back_inserter(output.second));
@@ -152,17 +152,24 @@ void tokenize(std::istream& in, trie_t& trie) {
 				for (size_t c = stack[i].end; c < line16.size(); ++c) {
 					trt = trie.traverse(line16[c], trt.first);
 					if (trt.second == true) {
-						// ToDo: Don't cancel the grow if it would eat more than one token, unless one of those tokens is another valid one.
-						if (stack[i + 1].end < c + 1) {
-							break;
+						// Find the token that we're absorbing parts of
+						size_t j = 1;
+						while (stack[i + j].end < c + 1) {
+							++j;
 						}
 						stack[i].trt = trt;
 						stack[i].end = c + 1;
+						// Erase j-1 tokens from the stack
+						for (size_t k = 0; k < j - 1; ++k) {
+							stack.erase(stack.begin() + i + 1);
+						}
+						// The next token is where this token should now end in, so check if we are also using all of that
 						if (stack[i + 1].end == c + 1) {
 							stack.erase(stack.begin() + i + 1);
 						}
 						else {
 							stack[i + 1].begin = c + 1;
+							stack[i + 1].trt.second = false;
 						}
 						grew = true;
 						break;
