@@ -387,6 +387,7 @@ public:
 	friend class const_iterator;
 
 	typedef std::map<String,size_t> query_type;
+	typedef std::pair<size_t,bool> traverse_type;
 	typedef String value_type;
 
 	trie() : compressed(false) {
@@ -575,6 +576,31 @@ public:
 		if (it != end()) {
 			nodes[it.path.back()].terminal = false;
 		}
+	}
+
+	traverse_type traverse(typename String::value_type c, size_t n) const {
+		traverse_type rv(std::numeric_limits<size_t>::max(), false);
+
+		if (n == std::numeric_limits<size_t>::max()) {
+			typename children_type::const_iterator child = findchild(children, c);
+			if (child != children.end()) {
+				rv.first = child->second;
+				rv.second = nodes[rv.first].terminal;
+			}
+		}
+		else {
+			typename children_type::const_iterator child = findchild(nodes[n].children, c);
+			if (child != nodes[n].children.end()) {
+				rv.first = child->second;
+				rv.second = nodes[rv.first].terminal;
+			}
+		}
+
+		return rv;
+	}
+
+	traverse_type traverse(typename String::value_type c) const {
+		return traverse(c, std::numeric_limits<size_t>::max());
 	}
 
 	void compress() {

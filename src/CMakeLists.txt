@@ -13,6 +13,8 @@ add_executable(trie-build trie-build.cpp ${UTF8} ${TRIE})
 
 add_executable(trie-print trie-print.cpp ${UTF8} ${TRIE})
 
+add_executable(trie-tokenize trie-tokenize.cpp ${UTF8} ${TRIE})
+
 add_executable(trie-spell trie-spell.cpp ${UTF8} ${TRIE} ${TRIE_SPELL})
 
 add_executable(trie-spell-foma trie-spell-foma.cpp ${UTF8} ${TRIE} ${TRIE_SPELL} ${POPEN_PLUS_C})
