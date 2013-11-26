@@ -26,49 +26,6 @@
 #include <string>
 
 typedef tdc::trie<tdc::u16string> trie_t;
-typedef std::vector<std::pair<size_t, trie_t::traverse_type>> stack_t;
-
-void traverse(const trie_t& trie, stack_t& stack, const tdc::u16string& line, size_t n) {
-	if (n >= line.size()) {
-		stack.push_back(make_pair(n, trie_t::traverse_type(std::numeric_limits<size_t>::max(), true)));
-		std::cout << "TOKENIZED:";
-		for (size_t i = 0; i < stack.size() - 1;) {
-			std::cout << " ";
-			size_t j = 1;
-			for (; j < stack.size() - i; ++j) {
-				if (stack[j].second.second == true) {
-					break;
-				}
-			}
-			utf8::utf16to8(line.begin() + stack[i].first, line.begin() + stack[i + j].first, std::ostream_iterator<char>(std::cout));
-			i += j;
-		}
-		std::cout << std::endl;
-		stack.pop_back();
-		return;
-	}
-
-	size_t node = std::numeric_limits<size_t>::max();
-	if (stack.back().second.second == true && stack.back().first != n) {
-		node = stack.back().second.first;
-	}
-
-	trie_t::traverse_type trt = trie.traverse(line[n], node);
-	if (trt.first == std::numeric_limits<size_t>::max()) {
-		trt.second = true;
-	}
-	if (trt.second == true) {
-		while (stack.back().second.second == false) {
-			stack.pop_back();
-		}
-		stack.push_back(make_pair(n + 1, trt));
-		traverse(trie, stack, line, n + 1);
-		stack.pop_back();
-	}
-	trt.second = false;
-	stack.push_back(make_pair(n, trt));
-	traverse(trie, stack, line, n + 1);
-}
 
 void tokenize(std::istream& in, trie_t& trie) {
 	std::string line8;
@@ -93,41 +50,40 @@ void tokenize(std::istream& in, trie_t& trie) {
 		line16.clear();
 		utf8::utf8to16(line8.begin(), line8.end(), std::back_inserter(line16));
 
-		/*
-		stack_t stack;
-		stack.push_back(make_pair(0, trie_t::traverse_type(std::numeric_limits<size_t>::max(), true)));
-		traverse(trie, stack, line16, 0);
-		//*/
-
 		stack.clear();
 		stack.resize(1);
 		outputs.clear();
 
-		bool found = false;
-		do {
-			found = false;
-			trie_t::traverse_type trt = stack.back().trt;
-			for (size_t c = stack.back().end; c < line16.size(); ++c) {
-				trt = trie.traverse(line16[c], trt.first);
-				if (trt.second == true || trt.first == std::numeric_limits<size_t>::max()) {
-					stack.back().trt = trt;
-					stack.back().end = c + 1;
-					stack.push_back(state_t(c + 1));
-					trt = stack.back().trt;
-					found = true;
+		// Build the initial smallest possible valid tokens tokenization
+		size_t oc = 0;
+		trie_t::traverse_type trt = stack.back().trt;
+		for (size_t c = 0; c < line16.size(); ++c) {
+			trt = trie.traverse(line16[c], trt.first);
+			if (trt.second == true) {
+				if (stack.back().end != oc) {
+					stack.push_back(state_t(stack.back().end, oc));
 				}
+				stack.push_back(state_t(oc, c + 1, trt));
+				trt.first = std::numeric_limits<size_t>::max();
+				oc = c + 1;
 			}
+			else if (trt.first == std::numeric_limits<size_t>::max() || c == line16.size() - 1) {
+				trt.first = std::numeric_limits<size_t>::max();
+				c = oc;
+				++oc;
+			}
+		}
 
-			while (stack.back().trt.second == false) {
-				stack.pop_back();
-			}
-			if (stack.empty()) {
-				break;
-			}
+		stack.push_back(state_t(stack.back().end, line16.size()));
 
+		// Store a copy and try to grow a token
+		bool grew = true;
+		while (grew) {
+			grew = false;
+
+			// Store a copy of the current tokenization
 			output.first = 0;
 			output.second.clear();
-			stack.push_back(state_t(stack.back().end, line16.size()));
 			for (size_t i = 0; i < stack.size(); ++i) {
 				if (stack[i].begin == stack[i].end) {
 					continue;
@@ -140,23 +96,87 @@ void tokenize(std::istream& in, trie_t& trie) {
 				utf8::utf16to8(line16.begin() + stack[i].begin, line16.begin() + stack[i].end, std::back_inserter(output.second));
 			}
 			outputs.push_back(output);
-			std::sort(outputs.begin(), outputs.end());
-			while (outputs.size() > 200) {
-				outputs.pop_back();
-			}
-			stack.pop_back();
 
-			if (stack.back().end == line16.size()) {
-				stack.pop_back();
-				while (stack.back().trt.second == false) {
-					stack.pop_back();
+			// Try to grow a token into a subsequent invalid token
+			for (size_t i = 0; i < stack.size() - 1 && !grew; ++i) {
+				// Skip empty and invalid tokens
+				if (stack[i].begin == stack[i].end || stack[i].trt.second == false) {
+					continue;
+				}
+				// Won't grow in this loop if the next token is valid
+				if (stack[i + 1].trt.second == true) {
+					continue;
+				}
+				trie_t::traverse_type trt = stack[i].trt;
+				for (size_t c = stack[i].end; c < line16.size(); ++c) {
+					trt = trie.traverse(line16[c], trt.first);
+					if (trt.second == true) {
+						// Find the token that we're absorbing parts of, but bail out if it is a valid one
+						size_t j = 1;
+						while (stack[i + j].end < c + 1 && stack[i + j].trt.second == false) {
+							++j;
+						}
+						// We must have hit a valid token in between, so bail out
+						if (stack[i+j].end < c+1) {
+							break;
+						}
+						stack[i].trt = trt;
+						stack[i].end = c + 1;
+						// Erase j-1 tokens from the stack
+						for (size_t k = 0; k < j - 1; ++k) {
+							stack.erase(stack.begin() + i + 1);
+						}
+						// The next token is where this token should now end in, so check if we are also using all of that
+						if (stack[i + 1].end == c + 1) {
+							stack.erase(stack.begin() + i + 1);
+						}
+						else {
+							stack[i + 1].begin = c + 1;
+						}
+						grew = true;
+						break;
+					}
+					if (trt.first == std::numeric_limits<size_t>::max() || c == line16.size() - 1) {
+						break;
+					}
 				}
 			}
-		} while (found && !stack.empty());
+
+			// Try to grow a token into a subsequent valid token
+			for (size_t i = 0; i < stack.size() - 1 && !grew; ++i) {
+				// Skip empty and invalid tokens
+				if (stack[i].begin == stack[i].end || stack[i].trt.second == false) {
+					continue;
+				}
+				trie_t::traverse_type trt = stack[i].trt;
+				for (size_t c = stack[i].end; c < line16.size(); ++c) {
+					trt = trie.traverse(line16[c], trt.first);
+					if (trt.second == true) {
+						// ToDo: Don't cancel the grow if it would eat more than one token, unless one of those tokens is another valid one.
+						if (stack[i + 1].end < c + 1) {
+							break;
+						}
+						stack[i].trt = trt;
+						stack[i].end = c + 1;
+						if (stack[i + 1].end == c + 1) {
+							stack.erase(stack.begin() + i + 1);
+						}
+						else {
+							stack[i + 1].begin = c + 1;
+						}
+						grew = true;
+						break;
+					}
+					if (trt.first == std::numeric_limits<size_t>::max() || c == line16.size() - 1) {
+						break;
+					}
+				}
+			}
+		}
 
 		std::cout << "INPUT: " << line8 << std::endl;
 		std::sort(outputs.begin(), outputs.end());
-		for (size_t i = 0; i < outputs.size() && i<10; ++i) {
+		for (size_t i = 0; i < outputs.size() && i < 10; ++i) {
 			std::cout << "TOKENIZED:" << outputs[i].second << std::endl;
 		}
 		std::cout << std::endl;
