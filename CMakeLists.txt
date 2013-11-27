@@ -1,6 +1,6 @@
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 cmake_minimum_required(VERSION 2.8.0 FATAL_ERROR)
-project(trie-tools CXX C)
+project(trie-tools CXX)
 
 # Release or Debug
 if(NOT CMAKE_BUILD_TYPE)
@@ -33,3 +33,34 @@ endif()
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+option(OPT_CPACK "Set to ON to generate CPack configuration files" OFF)
+if(OPT_CPACK)
+	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/include/tdc_trie.hpp" _trie_VERSION_FILE)
+	string(REGEX REPLACE ".*TRIE_VERSION_MAJOR = ([0-9]+).*" "\\1" _trie_VERSION_MAJOR "${_trie_VERSION_FILE}")
+	string(REGEX REPLACE ".*TRIE_VERSION_MINOR = ([0-9]+).*" "\\1" _trie_VERSION_MINOR "${_trie_VERSION_FILE}")
+	string(REGEX REPLACE ".*TRIE_VERSION_PATCH = ([0-9]+).*" "\\1" _trie_VERSION_PATCH "${_trie_VERSION_FILE}")
+	string(REGEX REPLACE ".*TRIE_REVISION = ([0-9]+).*" "\\1" _trie_REVISION "${_trie_VERSION_FILE}")
+	set(VERSION "${_trie_VERSION_MAJOR}.${_trie_VERSION_MINOR}.${_trie_VERSION_PATCH}.${_trie_REVISION}")
+
+	set(CPACK_PACKAGE_NAME "trie-tools")
+	set(CPACK_PACKAGE_CONTACT "Tino Didriksen <mail@tinodidriksen.com>")
+	set(CPACK_PACKAGE_VENDOR "http://tinodidriksen.com/")
+	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A bunch of tools for building and using tries, primarily intended for spellers and tokenizers.")
+	set(CPACK_PACKAGE_VERSION ${VERSION})
+
+	set(CPACK_DEBIAN_BUILD_DEPENDS debhelper cmake)
+	set(CPACK_DEBIAN_PACKAGE_SOURCE_COPY svn export --force)
+	set(CPACK_DEBIAN_CHANGELOG "  * Changelog is available at http://visl.sdu.dk/cg3/changelog.txt\n\n")
+	execute_process(COMMAND lsb_release -is
+		OUTPUT_VARIABLE _lsb_distribution OUTPUT_STRIP_TRAILING_WHITESPACE
+		RESULT_VARIABLE _lsb_release_failed)
+	set(CPACK_DEBIAN_DISTRIBUTION_NAME ${_lsb_distribution})
+	string(TOLOWER ${CPACK_DEBIAN_DISTRIBUTION_NAME} CPACK_DEBIAN_DISTRIBUTION_NAME)
+	if( ${CPACK_DEBIAN_DISTRIBUTION_NAME} STREQUAL "ubuntu" )
+		set(CPACK_DEBIAN_DISTRIBUTION_RELEASES precise quantal raring saucy)
+	endif()
+	set(DPUT_HOST "ppa:tinodidriksen/cg3")
+	include(CPack)
+	include(DebSourcePPA)
+endif()
