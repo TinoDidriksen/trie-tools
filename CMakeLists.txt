@@ -1,6 +1,6 @@
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 cmake_minimum_required(VERSION 2.8.0 FATAL_ERROR)
-project(trie-tools CXX)
+project(trie-tools CXX C)
 
 # Release or Debug
 if(NOT CMAKE_BUILD_TYPE)
