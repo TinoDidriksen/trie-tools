@@ -38,6 +38,12 @@ References:
 
 namespace tdc {
 
+const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013 Tino Didriksen. All Rights Reserved.";
+const uint32_t TRIE_VERSION_MAJOR = 0;
+const uint32_t TRIE_VERSION_MINOR = 8;
+const uint32_t TRIE_VERSION_PATCH = 0;
+const uint32_t TRIE_REVISION = 9411;
+
 typedef std::basic_string<uint8_t> u8string;
 typedef std::basic_string<uint16_t> u16string;
 typedef std::basic_string<uint32_t> u32string;
@@ -60,7 +66,7 @@ template<typename T, typename Y>
 typename T::iterator findchild(T& t, const Y& y) {
 	typename T::iterator it, first = t.begin();
 	size_t count = t.size(), step;
- 
+
 	while (count > 0) {
 		it = first;
 		step = count / 2;
@@ -83,7 +89,7 @@ template<typename T, typename Y>
 typename T::const_iterator findchild(const T& t, const Y& y) {
 	typename T::const_iterator it, first = t.begin();
 	size_t count = t.size(), step;
- 
+
 	while (count > 0) {
 		it = first;
 		step = count / 2;

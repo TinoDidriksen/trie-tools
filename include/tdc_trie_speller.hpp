@@ -34,6 +34,7 @@ References:
 #include <unordered_map>
 #include <cctype>
 #include <cwctype>
+#include <cmath>
 
 namespace tdc {
 
@@ -119,7 +120,7 @@ public:
 				if (!valid) {
 					// If the word was not valid, fold it to lower case and try again
 					u16buffer.resize(0);
-					u16buffer.reserve(words[i].u16buffer.length());
+					u16buffer.reserve(words[i].u16buffer.size());
 					std::transform(words[i].u16buffer.begin(), words[i].u16buffer.end(), std::back_inserter(u16buffer), towlower);
 					// Don't try again if the lower cased variant has already been tried
 					typename valid_words_t::iterator itl = valid_words.find(u16buffer);
@@ -155,51 +156,27 @@ public:
 		std::vector<String> alts;
 
 		if (is_correct(word) != true) {
-			typename dict_t::query_type qpDict, qpFly;
-			if (words[cw-1].u16buffer.length() <= 3) {
-				qpDict = dicts[0].query(words[cw-1].u16buffer, 1);
-				qpFly = dicts[1].query(words[cw-1].u16buffer, 1);
-			}
-			else {
-				qpDict = dicts[0].query(words[cw-1].u16buffer, 2);
-				qpFly = dicts[1].query(words[cw-1].u16buffer, 2);
-			}
+			size_t dist = std::max(static_cast<size_t>(1), static_cast<size_t>(std::log(words[cw - 1].u16buffer.size()) / std::log(2)));
+			typename dict_t::query_type qps[] = { dicts[0].query(words[cw - 1].u16buffer, dist), dicts[1].query(words[cw - 1].u16buffer, dist) };
 			for (size_t i=1 ; i<3 ; ++i) {
-				for (typename dict_t::query_type::iterator it=qpDict.begin() ; it != qpDict.end() ; ++it) {
-					if (it->first == words[cw-1].u16buffer) {
-						alts.clear();
-						goto find_alternatives_end;
-					}
-					if (it->second == i) {
-						u16buffer.clear();
-						if (cw-1 != 0) {
-							u16buffer.append(words[0].u16buffer.begin(), words[0].u16buffer.begin()+words[cw-1].start);
+				for (size_t qi = 0; qi < 2; ++qi) {
+					for (typename dict_t::query_type::iterator it = qps[qi].begin(); it != qps[qi].end(); ++it) {
+						if (it->first == words[cw - 1].u16buffer) {
+							alts.clear();
+							goto find_alternatives_end;
 						}
-						u16buffer.append(it->first);
-						if (cw-1 != 0) {
-							u16buffer.append(words[0].u16buffer.begin()+words[cw-1].start+words[cw-1].count, words[0].u16buffer.end());
-						}
-						if (std::find(alts.begin(), alts.end(), u16buffer) == alts.end()) {
-							alts.push_back(u16buffer);
-						}
-					}
-				}
-				for (typename dict_t::query_type::iterator it=qpFly.begin() ; it != qpFly.end() ; ++it) {
-					if (it->first == words[cw-1].u16buffer) {
-						alts.clear();
-						goto find_alternatives_end;
-					}
-					if (it->second == i) {
-						u16buffer.clear();
-						if (cw-1 != 0) {
-							u16buffer.append(words[0].u16buffer.begin(), words[0].u16buffer.begin()+words[cw-1].start);
-						}
-						u16buffer.append(it->first);
-						if (cw-1 != 0) {
-							u16buffer.append(words[0].u16buffer.begin()+words[cw-1].start+words[cw-1].count, words[0].u16buffer.end());
-						}
-						if (std::find(alts.begin(), alts.end(), u16buffer) == alts.end()) {
-							alts.push_back(u16buffer);
+						if (it->second == i) {
+							u16buffer.clear();
+							if (cw - 1 != 0) {
+								u16buffer.append(words[0].u16buffer.begin(), words[0].u16buffer.begin() + words[cw - 1].start);
+							}
+							u16buffer.append(it->first);
+							if (cw - 1 != 0) {
+								u16buffer.append(words[0].u16buffer.begin() + words[cw - 1].start + words[cw - 1].count, words[0].u16buffer.end());
+							}
+							if (std::find(alts.begin(), alts.end(), u16buffer) == alts.end()) {
+								alts.push_back(u16buffer);
+							}
 						}
 					}
 				}
@@ -211,7 +188,7 @@ public:
 	}
 
 	virtual void check_stream_utf8(std::istream& in, std::ostream& out) {
-		out << "@(#) International Ispell Version 3.1.20 (but really trie-tools)" << std::endl;
+		out << "@(#) International Ispell Version 3.1.20 (but really trie-tools " << TRIE_VERSION_MAJOR << "." << TRIE_VERSION_MINOR << "." << TRIE_VERSION_PATCH << "." << TRIE_REVISION << ")" << std::endl;
 
 		std::string line8;
 		std::string out8;
