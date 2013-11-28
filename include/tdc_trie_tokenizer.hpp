@@ -136,6 +136,7 @@ namespace tdc {
 
 				pout.line_open();
 				tokens.clear();
+				seen_tokens.clear();
 				outputs.clear();
 				line16.clear();
 				utf8::utf8to16(line8.begin(), line8.end(), std::back_inserter(line16));
@@ -224,9 +225,7 @@ namespace tdc {
 						pout.tokens_close();
 						pout.span_close();
 					}
-
-					pout.span_open();
-					pout.span_print(line16.begin() + span.first, line16.begin() + span.second);
+					lastout = span.second;
 
 					// Build all possible combinations of tokens
 					for (; tmin < tmax + 1; ++tmin) {
@@ -242,9 +241,28 @@ namespace tdc {
 					// Order the outputs by their weight
 					std::sort(outputs.begin(), outputs.end());
 
-					// Actually output something...
 					bool perfect = false;
 					size_t perfw = std::numeric_limits<size_t>::max() - (span.second - span.first);
+
+					// Test whether there is one and only one perfect match, and if so write that out as invidual spans instead of sub-tokens
+					if (outputs.size() > 1 && outputs[0].first == perfw && outputs[1].first != perfw) {
+						const output_t& output = outputs[0].second;
+						for (size_t i = 0; i < output.size(); ++i) {
+							pout.span_open();
+							pout.span_print(line16.begin() + tokens[output[i]].first, line16.begin() + tokens[output[i]].second);
+							pout.tokens_open();
+							pout.token_open();
+							pout.token_print(line16.begin() + tokens[output[i]].first, line16.begin() + tokens[output[i]].second);
+							pout.token_close();
+							pout.tokens_close();
+							pout.span_close();
+						}
+						continue;
+					}
+
+					// Actually output something...
+					pout.span_open();
+					pout.span_print(line16.begin() + span.first, line16.begin() + span.second);
 					for (size_t i = 0; i < outputs.size(); ++i) {
 						// If any perfect matches were found, stop after all perfect matches are output
 						if (outputs[i].first == perfw) {
@@ -277,7 +295,6 @@ namespace tdc {
 						}
 						pout.tokens_close();
 					}
-					lastout = span.second;
 					pout.span_close();
 				}
 
