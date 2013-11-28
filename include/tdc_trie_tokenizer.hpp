@@ -78,10 +78,13 @@ namespace tdc {
 					seen_tokens.insert(output[i]);
 					weight -= tokens[output[i]].second - tokens[output[i]].first;
 				}
-				// Insert the new combination in the weighted correct place to keep outputs sorted
-				std::pair<size_t, output_t> ins = std::make_pair(weight, output);
-				outputs_t::iterator it = std::lower_bound(outputs.begin(), outputs.end(), ins);
-				outputs.insert(it, ins);
+				// If this is a perfect match then prepend it, otherwise append it
+				if (weight == perfw) {
+					outputs.insert(outputs.begin(), std::make_pair(weight, output));
+				}
+				else {
+					outputs.push_back(std::make_pair(weight, output));
+				}
 			}
 			output.pop_back();
 		}
@@ -173,6 +176,7 @@ namespace tdc {
 				}
 
 				// Convert UTF-8 to UTF-16
+				line16.clear();
 				utf8::utf8to16(line8.begin(), line8.end(), std::back_inserter(line16));
 
 				// Now trim the UTF-16 version, just to catch the 1% crazy input that uses Unicode whitespace
@@ -197,7 +201,6 @@ namespace tdc {
 				tokens.clear();
 				seen_tokens.clear();
 				outputs.clear();
-				line16.clear();
 
 				// Find all possible valid tokens
 				for (size_t co = 0; co < line16.size(); ++co) {
@@ -278,6 +281,9 @@ namespace tdc {
 						}
 						continue;
 					}
+
+					// Sort outputs according to weight
+					std::sort(outputs.begin(), outputs.end());
 
 					// Actually output something...
 					bool perfect = false;
