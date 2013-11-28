@@ -8,12 +8,13 @@ endif()
 set(UTF8 ../include/utf8.h)
 set(TRIE ../include/tdc_trie.hpp)
 set(TRIE_SPELL ../include/tdc_trie_speller.hpp)
+set(TRIE_TOKENIZE ../include/tdc_trie_tokenizer.hpp)
 
 add_executable(trie-build trie-build.cpp ${UTF8} ${TRIE})
 
 add_executable(trie-print trie-print.cpp ${UTF8} ${TRIE})
 
-add_executable(trie-tokenize trie-tokenize.cpp ${UTF8} ${TRIE})
+add_executable(trie-tokenize trie-tokenize.cpp ${UTF8} ${TRIE} ${TRIE_TOKENIZE})
 
 add_executable(trie-spell trie-spell.cpp ${UTF8} ${TRIE} ${TRIE_SPELL})
 

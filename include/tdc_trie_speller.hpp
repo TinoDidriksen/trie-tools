@@ -18,12 +18,6 @@
 * along with trie-tools.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
-References:
-- http://en.wikipedia.org/wiki/Trie
-- http://www.wutka.com/dawg.html
-*/
-
 #pragma once
 #ifndef TDC_TRIE_SPELLER_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 #define TDC_TRIE_SPELLER_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
@@ -202,7 +196,7 @@ public:
 			}
 
 			size_t b = 0, e = 0;
-			const char *spaces = " \t\r\n";
+			const char *spaces = " \t\r\n!:;?{}\"";
 			for (;;) {
 				b = line8.find_first_not_of(spaces, e);
 				e = line8.find_first_of(spaces, b);
