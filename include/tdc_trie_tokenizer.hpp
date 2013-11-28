@@ -158,7 +158,7 @@ namespace tdc {
 				// First, trim the UTF-8 since that will catch 99% of whitespace
 				// Trim trailing whitespace
 				while (!line8.empty() && std::isspace(line8.back())) {
-					line8.pop_back();
+					line8.resize(line8.size()-1);
 				}
 				// Trim leading whitespace
 				for (size_t i = 0; i < line8.size(); ++i) {
@@ -178,7 +178,7 @@ namespace tdc {
 				// Now trim the UTF-16 version, just to catch the 1% crazy input that uses Unicode whitespace
 				// Trim trailing whitespace
 				while (!line16.empty() && std::iswspace(line16.back())) {
-					line16.pop_back();
+					line16.resize(line16.size()-1);
 				}
 				// Trim leading whitespace
 				for (size_t i = 0; i < line16.size(); ++i) {
