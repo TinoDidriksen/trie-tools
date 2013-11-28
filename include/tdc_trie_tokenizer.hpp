@@ -37,7 +37,7 @@ namespace tdc {
 	template<typename String = u16string>
 	class trie_tokenizer {
 	private:
-		typedef trie<String> trie_t;
+		typedef ::tdc::trie<String> trie_t;
 		const trie_t *trie_;
 		std::string line8;
 		u16string line16;
