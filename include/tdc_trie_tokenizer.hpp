@@ -261,6 +261,10 @@ namespace tdc {
 						if (seen_tokens.count(tmin)) {
 							continue;
 						}
+						// If there is a perfect match and we're about to make an imperfect match, bail out...
+						if (!outputs.empty() && outputs.front().first == perfw && span.first != tokens[tmin].first) {
+							continue;
+						}
 
 						output.clear();
 						_recurse_combos(tmin, tmax + 1);
