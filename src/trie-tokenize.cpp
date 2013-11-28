@@ -40,9 +40,9 @@ int main(int argc, char *argv[]) {
 
 	if (args.size() > 2 && args[2] != "-") {
 		std::ifstream in(args[2].c_str(), std::ios::binary);
-		tokenizer.tokenize(in, std::cout);
+		tokenizer.tokenize<>(in);
 	}
 	else {
-		tokenizer.tokenize(std::cin, std::cout);
+		tokenizer.tokenize<>(std::cin);
 	}
 }

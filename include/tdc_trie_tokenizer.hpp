@@ -50,6 +50,51 @@ namespace tdc {
 		outputs_t outputs;
 
 	public:
+		class token_printer {
+		private:
+			std::ostream *out;
+
+		public:
+			token_printer(std::ostream& out) :
+				out(&out) {
+			}
+
+			void line_open() {
+			}
+			void line_close() {
+				(*out) << std::endl;
+			}
+
+			void span_open() {
+				(*out) << "INPUT: ";
+			}
+			void span_print(typename String::iterator begin, typename String::iterator end) {
+				utf8::utf16to8(begin, end, std::ostream_iterator<char>(*out));
+				(*out) << std::endl;
+			}
+			void span_close() {
+			}
+
+			void tokens_open() {
+				(*out) << "TOKENS:";
+			}
+			void tokens_close() {
+				(*out) << std::endl;
+			}
+
+			void token_open(bool garbage = false) {
+				(*out) << ' ';
+				if (garbage) {
+					(*out) << '*';
+				}
+			}
+			void token_print(typename String::iterator begin, typename String::iterator end) {
+				utf8::utf16to8(begin, end, std::ostream_iterator<char>(*out));
+			}
+			void token_close() {
+			}
+		};
+
 		trie_tokenizer() :
 			trie_(0) {
 		}
@@ -66,7 +111,8 @@ namespace tdc {
 			trie_ = &t;
 		}
 
-		void tokenize(std::istream& in, std::ostream& out) {
+		template<typename Printer = token_printer>
+		void tokenize(std::istream& in, Printer pout = token_printer(std::cout)) {
 			if (trie_ == 0) {
 				throw (-1);
 			}
@@ -88,6 +134,7 @@ namespace tdc {
 					continue;
 				}
 
+				pout.line_open();
 				tokens.clear();
 				outputs.clear();
 				line16.clear();
@@ -145,8 +192,9 @@ namespace tdc {
 
 				// Special case where there are no valid tokens
 				if (tokens.empty()) {
-					out << "INPUT: " << line8 << std::endl;
-					out << std::endl;
+					pout.span_open();
+					pout.span_print(line16.begin(), line16.end());
+					pout.span_close();
 					continue;
 				}
 
@@ -167,17 +215,18 @@ namespace tdc {
 
 					// Special case where there is invalid input before any found tokens
 					if (lastout < tokens[tmin].first) {
-						out << "INPUT: ";
-						utf8::utf16to8(line16.begin() + lastout, line16.begin() + span.first, std::ostream_iterator<char>(out));
-						out << std::endl;
-						out << "TOKENS: *";
-						utf8::utf16to8(line16.begin() + lastout, line16.begin() + span.first, std::ostream_iterator<char>(out));
-						out << std::endl;
+						pout.span_open();
+						pout.span_print(line16.begin() + lastout, line16.begin() + span.first);
+						pout.tokens_open();
+						pout.token_open(true);
+						pout.token_print(line16.begin() + lastout, line16.begin() + span.first);
+						pout.token_close();
+						pout.tokens_close();
+						pout.span_close();
 					}
 
-					out << "INPUT: ";
-					utf8::utf16to8(line16.begin() + span.first, line16.begin() + span.second, std::ostream_iterator<char>(out));
-					out << std::endl;
+					pout.span_open();
+					pout.span_print(line16.begin() + span.first, line16.begin() + span.second);
 
 					// Build all possible combinations of tokens
 					for (; tmin < tmax + 1; ++tmin) {
@@ -206,38 +255,44 @@ namespace tdc {
 						}
 
 						const output_t& output = outputs[i].second;
-						out << "TOKENS:";
+						pout.tokens_open();
 						size_t lastout = span.first;
 						for (size_t j = 0; j < output.size(); ++j) {
 							// Output any unclaimed characters between previous output and this token as an invalid token
 							if (lastout < tokens[output[j]].first) {
-								out << " *";
-								utf8::utf16to8(line16.begin() + lastout, line16.begin() + tokens[output[j]].first, std::ostream_iterator<char>(out));
+								pout.token_open(true);
+								pout.token_print(line16.begin() + lastout, line16.begin() + tokens[output[j]].first);
+								pout.token_close();
 							}
-							out << ' ';
-							utf8::utf16to8(line16.begin() + tokens[output[j]].first, line16.begin() + tokens[output[j]].second, std::ostream_iterator<char>(out));
+							pout.token_open();
+							pout.token_print(line16.begin() + tokens[output[j]].first, line16.begin() + tokens[output[j]].second);
+							pout.token_close();
 							lastout = tokens[output[j]].second;
 						}
 						// Output any unclaimed characters between previous output and the end of the span as an invalid token
 						if (lastout < span.second) {
-							out << " *";
-							utf8::utf16to8(line16.begin() + lastout, line16.begin() + span.second, std::ostream_iterator<char>(out));
+							pout.token_open(true);
+							pout.token_print(line16.begin() + lastout, line16.begin() + span.second);
+							pout.token_close();
 						}
-						out << std::endl;
+						pout.tokens_close();
 					}
 					lastout = span.second;
+					pout.span_close();
 				}
 
 				// Special case where there is invalid input after any found tokens
 				if (lastout < line16.size()) {
-					out << "INPUT: ";
-					utf8::utf16to8(line16.begin() + lastout, line16.end(), std::ostream_iterator<char>(out));
-					out << std::endl;
-					out << "TOKENS: *";
-					utf8::utf16to8(line16.begin() + lastout, line16.end(), std::ostream_iterator<char>(out));
-					out << std::endl;
+					pout.span_open();
+					pout.span_print(line16.begin() + lastout, line16.end());
+					pout.tokens_open();
+					pout.token_open(true);
+					pout.token_print(line16.begin() + lastout, line16.end());
+					pout.token_close();
+					pout.tokens_close();
+					pout.span_close();
 				}
-				out << std::endl;
+				pout.line_close();
 			}
 		}
 
