@@ -27,6 +27,21 @@
 
 typedef tdc::trie<tdc::u16string> trie_t;
 
+void trie_print(const trie_t& trie, std::ostream& out) {
+	size_t i = 0;
+	for (trie_t::const_iterator it = trie.begin(); it != trie.end(); ++it) {
+		const tdc::u16string& word16 = *it;
+		utf8::utf16to8(word16.begin(), word16.end(), std::ostream_iterator<char>(out));
+		out << std::endl;
+
+		if (i % 10000 == 0) {
+			std::cerr << "Printed word #" << i << std::endl;
+		}
+		++i;
+	}
+	std::cerr << "Printed " << i << " words" << std::endl;
+}
+
 int main(int argc, char *argv[]) {
 	std::vector<std::string> args(argv, argv+argc);
 
@@ -40,18 +55,11 @@ int main(int argc, char *argv[]) {
 		trie.unserialize(std::cin);
 	}
 
-	std::string word8;
-	size_t i = 0;
-	for (trie_t::const_iterator it = trie.begin() ; it != trie.end() ; ++it) {
-		word8.clear();
-		const tdc::u16string& word16 = *it;
-		utf8::utf16to8(word16.begin(), word16.end(), std::back_inserter(word8));
-		std::cout << word8 << std::endl;
-
-		if (i % 10000 == 0) {
-			std::cerr << "Printed word #" << i << " (" << word8 << ")" << std::endl;
-		}
-		++i;
+	if (args.size() > 2 && args[2] != "-") {
+		std::ofstream out(args[2].c_str(), std::ios::binary);
+		trie_print(trie, out);
 	}
-	std::cerr << "Printed " << i << " words" << std::endl;
+	else {
+		trie_print(trie, std::cout);
+	}
 }

@@ -204,13 +204,13 @@ namespace tdc {
 
 				// Find all possible valid tokens
 				for (size_t co = 0; co < line16.size(); ++co) {
-					typename trie_t::traverse_type trt(std::numeric_limits<size_t>::max(), false);
+					typename trie_t::traverse_type trt(trie_t::npos, false);
 					for (size_t ci = co; ci < line16.size(); ++ci) {
 						trt = trie_->traverse(line16[ci], trt.first);
 						if (trt.second == true) {
 							tokens.push_back(std::make_pair(co, ci + 1));
 						}
-						else if (trt.first == std::numeric_limits<size_t>::max()) {
+						else if (trt.first == trie_t::npos) {
 							break;
 						}
 					}
