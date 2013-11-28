@@ -30,6 +30,7 @@
 #include <string>
 #include <utility>
 #include <cctype>
+#include <cwctype>
 
 namespace tdc {
 
@@ -48,6 +49,42 @@ namespace tdc {
 		output_t output;
 		typedef std::vector<std::pair<size_t, output_t>> outputs_t;
 		outputs_t outputs;
+		size_t perfw;
+
+		void _recurse_combos(size_t tmin, size_t tmax) {
+			output.push_back(tmin);
+			for (size_t to = output.back() + 1; to < tmax; ++to) {
+				// If there is a perfect match and we're about to make an imperfect match, bail out...
+				if (!outputs.empty() && outputs.front().first == perfw && tokens[output.back()].second != tokens[to].first) {
+					break;
+				}
+				// Recurse this combo
+				if (tokens[to].first >= tokens[output.back()].second) {
+					_recurse_combos(to, tmax);
+				}
+			}
+			// Test whether we've reached the last possible token in this combo, and save the state if so
+			bool cut = true;
+			for (size_t ti = output.back() + 1; ti < tmax; ++ti) {
+				if (tokens[ti].first >= tokens[output.back()].second) {
+					cut = false;
+					break;
+				}
+			}
+			if (cut) {
+				// std::sort is ascending by default, so let high weight mean poorer quality
+				size_t weight = std::numeric_limits<size_t>::max();
+				for (size_t i = 0; i < output.size(); ++i) {
+					seen_tokens.insert(output[i]);
+					weight -= tokens[output[i]].second - tokens[output[i]].first;
+				}
+				// Insert the new combination in the weighted correct place to keep outputs sorted
+				std::pair<size_t, output_t> ins = std::make_pair(weight, output);
+				outputs_t::iterator it = std::lower_bound(outputs.begin(), outputs.end(), ins);
+				outputs.insert(it, ins);
+			}
+			output.pop_back();
+		}
 
 	public:
 		class token_printer {
@@ -118,6 +155,7 @@ namespace tdc {
 			}
 
 			while (std::getline(in, line8)) {
+				// First, trim the UTF-8 since that will catch 99% of whitespace
 				// Trim trailing whitespace
 				while (!line8.empty() && std::isspace(line8.back())) {
 					line8.pop_back();
@@ -134,12 +172,32 @@ namespace tdc {
 					continue;
 				}
 
+				// Convert UTF-8 to UTF-16
+				utf8::utf8to16(line8.begin(), line8.end(), std::back_inserter(line16));
+
+				// Now trim the UTF-16 version, just to catch the 1% crazy input that uses Unicode whitespace
+				// Trim trailing whitespace
+				while (!line16.empty() && std::iswspace(line16.back())) {
+					line16.pop_back();
+				}
+				// Trim leading whitespace
+				for (size_t i = 0; i < line16.size(); ++i) {
+					if (!std::iswspace(line16[i])) {
+						line16.erase(line16.begin(), line16.begin() + i); // becomes a no-op for i=0
+						break;
+					}
+				}
+				// Don't even try to tokenize empty lines...
+				if (line16.empty()) {
+					continue;
+				}
+
+				// Reset states
 				pout.line_open();
 				tokens.clear();
 				seen_tokens.clear();
 				outputs.clear();
 				line16.clear();
-				utf8::utf8to16(line8.begin(), line8.end(), std::back_inserter(line16));
 
 				// Find all possible valid tokens
 				for (size_t co = 0; co < line16.size(); ++co) {
@@ -154,42 +212,6 @@ namespace tdc {
 						}
 					}
 				}
-
-#if 0
-				// Remove smaller tokens that are unambiguously part of a larger token
-				size_t sz_before = tokens.size();
-				for (size_t to = 0; to < tokens.size();) {
-					bool erasable = true;
-					size_t ti = to;
-					while (ti < tokens.size() && tokens[to].first == tokens[ti].first) {
-						++ti;
-					}
-					if (ti == to || ti == to + 1) {
-						// There was no larger token starting the same place, so bail out...
-						++to;
-						continue;
-					}
-					for (size_t tn = ti; tn < tokens.size(); ++tn) {
-						if (tokens[to].second == tokens[tn].first) {
-							// There is a later token that starts where the current token ends, so preserve the token
-							erasable = false;
-							break;
-						}
-						if (tokens[tn].first > tokens[to].second) {
-							// We've gone past any overlapping tokens and found no conflicts, so bail out early...
-							break;
-						}
-					}
-
-					if (erasable) {
-						tokens.erase(tokens.begin() + to);
-					}
-					else {
-						++to;
-					}
-				}
-				std::cerr << "Erased " << (sz_before - tokens.size()) << " tokens (" << sz_before << " -> " << tokens.size() << ")" << std::endl;
-#endif
 
 				// Special case where there are no valid tokens
 				if (tokens.empty()) {
@@ -214,7 +236,10 @@ namespace tdc {
 						}
 					}
 
-					// Special case where there is invalid input before any found tokens
+					// Calculate the perfect weight
+					perfw = std::numeric_limits<size_t>::max() - (span.second - span.first);
+
+					// Special case where there is invalid input before any found tokens, or between spans of tokens
 					if (lastout < tokens[tmin].first) {
 						pout.span_open();
 						pout.span_print(line16.begin() + lastout, line16.begin() + span.first);
@@ -235,14 +260,8 @@ namespace tdc {
 						}
 
 						output.clear();
-						traverse(tmin, tmax + 1);
+						_recurse_combos(tmin, tmax + 1);
 					}
-
-					// Order the outputs by their weight
-					std::sort(outputs.begin(), outputs.end());
-
-					bool perfect = false;
-					size_t perfw = std::numeric_limits<size_t>::max() - (span.second - span.first);
 
 					// Test whether there is one and only one perfect match, and if so write that out as invidual spans instead of sub-tokens
 					if (outputs.size() > 1 && outputs[0].first == perfw && outputs[1].first != perfw) {
@@ -261,6 +280,7 @@ namespace tdc {
 					}
 
 					// Actually output something...
+					bool perfect = false;
 					pout.span_open();
 					pout.span_print(line16.begin() + span.first, line16.begin() + span.second);
 					for (size_t i = 0; i < outputs.size(); ++i) {
@@ -311,32 +331,6 @@ namespace tdc {
 				}
 				pout.line_close();
 			}
-		}
-
-		void traverse(size_t tmin, size_t tmax) {
-			output.push_back(tmin);
-			for (size_t to = output.back() + 1; to < tmax; ++to) {
-				if (tokens[to].first >= tokens[output.back()].second) {
-					traverse(to, tmax);
-				}
-			}
-			bool cut = true;
-			for (size_t ti = output.back() + 1; ti < tmax; ++ti) {
-				if (tokens[ti].first >= tokens[output.back()].second) {
-					cut = false;
-					break;
-				}
-			}
-			if (cut) {
-				// std::sort is ascending by default, so let high weight mean poorer quality
-				size_t weight = std::numeric_limits<size_t>::max();
-				for (size_t i = 0; i < output.size(); ++i) {
-					seen_tokens.insert(output[i]);
-					weight -= tokens[output[i]].second - tokens[output[i]].first;
-				}
-				outputs.push_back(std::make_pair(weight, output));
-			}
-			output.pop_back();
 		}
 	};
 
