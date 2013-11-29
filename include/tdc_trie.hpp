@@ -191,7 +191,7 @@ private:
 		{
 		}
 
-		bool add(root_type& root, const String& entry, size_t pos=0, size_t depth=0) {
+		bool add(root_type& root, const String& entry, size_t pos=0, Count depth=0) {
 			if (pos < entry.size()) {
 				typename children_type::iterator child = findchild(children, entry[pos]);
 				if (child != children.end()) {
@@ -218,7 +218,7 @@ private:
 			return false;
 		}
 
-		void query(const root_type& root, const String& entry, size_t pos, query_type& collected, query_path_type& qp, size_t maxdist=0, size_t curdist=0, size_t depth=0) const {
+		void query(const root_type& root, const String& entry, size_t pos, query_type& collected, query_path_type& qp, size_t maxdist=0, size_t curdist=0, Count depth=0) const {
 			qp.push_back(this);
 
 			if (pos < entry.size()) {
@@ -262,7 +262,7 @@ private:
 		}
 
 	private:
-		void updateChildrenDepth(root_type& root, size_t depth=0) {
+		void updateChildrenDepth(root_type& root, Count depth=0) {
 			children_depth = std::max(children_depth, depth);
 			if (parent != static_cast<Count>(this - &root.nodes[0])) {
 				root.nodes[parent].updateChildrenDepth(root, depth+1);
