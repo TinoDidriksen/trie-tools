@@ -56,7 +56,7 @@ namespace tdc {
 			for (size_t to = output.back() + 1; to < tmax; ++to) {
 				// If there is a perfect match and we're about to make an imperfect match, bail out...
 				if (!outputs.empty() && outputs.front().first == perfw && tokens[output.back()].second != tokens[to].first) {
-					break;
+					continue;
 				}
 				// Recurse this combo
 				if (tokens[to].first >= tokens[output.back()].second) {
