@@ -383,7 +383,9 @@ public:
 	typedef std::map<String,size_t> query_type;
 	typedef std::pair<size_t,bool> traverse_type;
 	typedef String value_type;
-	static const size_t npos = 0;
+	enum {
+		npos = static_cast<Count>(0)
+	};
 
 	trie() :
 		compressed(false),
