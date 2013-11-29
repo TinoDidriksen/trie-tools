@@ -42,7 +42,7 @@ const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013 Tino Didriksen. Al
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 0;
-const uint32_t TRIE_REVISION = 9425;
+const uint32_t TRIE_REVISION = 9432;
 
 typedef std::basic_string<uint8_t> u8string;
 typedef std::basic_string<uint16_t> u16string;
@@ -510,6 +510,7 @@ public:
 		typename node_type::children_type::const_iterator child = findchild(nodes[0].children, entry[0]);
 		if (child != nodes[0].children.end()) {
 			rv.path.clear();
+			rv.path.push_back(0);
 			rv.path.push_back(child->second);
 			for (size_t i=1 ; i<entry.size() ; ++i) {
 				Count second = child->second;
