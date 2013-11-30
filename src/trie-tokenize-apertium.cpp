@@ -57,7 +57,7 @@ public:
 	void tokens_close() {
 	}
 
-	void token_open(bool garbage = false) {
+	void token_print(tdc::u16string::iterator begin, tdc::u16string::iterator end, bool garbage = false) {
 		if (!first_token) {
 			(*out) << '+';
 		}
@@ -65,11 +65,7 @@ public:
 		if (garbage) {
 			(*out) << '*';
 		}
-	}
-	void token_print(tdc::u16string::iterator begin, tdc::u16string::iterator end) {
 		utf8::utf16to8(begin, end, std::ostream_iterator<char>(*out));
-	}
-	void token_close() {
 	}
 };
 

@@ -29,6 +29,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <cmath>
 #include <cctype>
 #include <cwctype>
 
@@ -44,49 +45,52 @@ namespace tdc {
 
 		typedef std::pair<size_t, size_t> token_t;
 		std::vector<token_t> tokens;
-		std::set<size_t> seen_tokens;
 		typedef std::vector<size_t> output_t;
 		output_t output;
 		typedef std::vector<std::pair<size_t, output_t>> outputs_t;
 		outputs_t outputs;
-		size_t perfw;
+
+		std::pair<size_t, size_t> span;
+		size_t weight;
 
 		void _recurse_combos(size_t tmin, size_t tmax) {
+			// If we can already see this would be a worse output than stored ones, don't even try...
+			if (!outputs.empty() && outputs.back().first < weight - (span.second - tokens[tmin].first)) {
+				return;
+			}
+
+			weight -= tokens[tmin].second - tokens[tmin].first;
 			output.push_back(tmin);
+			bool cut = true;
 			for (size_t to = output.back() + 1; to < tmax; ++to) {
-				// If there is a perfect match and we're about to make an imperfect match, bail out...
-				if (!outputs.empty() && outputs.front().first == perfw && tokens[output.back()].second != tokens[to].first) {
-					continue;
-				}
 				// Recurse this combo
 				if (tokens[to].first >= tokens[output.back()].second) {
+					cut = false;
 					_recurse_combos(to, tmax);
 				}
 			}
-			// Test whether we've reached the last possible token in this combo, and save the state if so
-			bool cut = true;
-			for (size_t ti = output.back() + 1; ti < tmax; ++ti) {
-				if (tokens[ti].first >= tokens[output.back()].second) {
-					cut = false;
-					break;
-				}
-			}
 			if (cut) {
-				// std::sort is ascending by default, so let high weight mean poorer quality
-				size_t weight = std::numeric_limits<size_t>::max();
-				for (size_t i = 0; i < output.size(); ++i) {
-					seen_tokens.insert(output[i]);
-					weight -= tokens[output[i]].second - tokens[output[i]].first;
+				// If this output is better than any previous seen output, wipe all stored outputs in favour of this one
+				if (!outputs.empty() && weight < outputs.back().first) {
+					outputs.clear();
 				}
-				// If this is a perfect match then prepend it, otherwise append it
-				if (weight == perfw) {
-					outputs.insert(outputs.begin(), std::make_pair(weight, output));
-				}
-				else {
+				// Only add an output if it is equal or better than currently stored outputs
+				if (outputs.empty() || weight <= outputs.back().first) {
 					outputs.push_back(std::make_pair(weight, output));
 				}
 			}
 			output.pop_back();
+			weight += tokens[tmin].second - tokens[tmin].first;
+		}
+
+		template<typename Printer>
+		void _span_oneshot(Printer& pout, typename String::iterator begin, typename String::iterator end, bool garbage = false) {
+			pout.span_open();
+			pout.span_print(begin, end);
+			pout.tokens_open();
+			pout.token_print(begin, end, garbage);
+			pout.tokens_close();
+			pout.span_close();
 		}
 
 	public:
@@ -122,18 +126,21 @@ namespace tdc {
 				(*out) << std::endl;
 			}
 
-			void token_open(bool garbage = false) {
+			void token_print(typename String::iterator begin, typename String::iterator end, bool garbage = false) {
 				(*out) << ' ';
 				if (garbage) {
 					(*out) << '*';
 				}
-			}
-			void token_print(typename String::iterator begin, typename String::iterator end) {
 				utf8::utf16to8(begin, end, std::ostream_iterator<char>(*out));
 			}
-			void token_close() {
-			}
 		};
+
+		static bool _compare_outputs(const outputs_t::value_type& a, const outputs_t::value_type& b) {
+			if (a.first == b.first) {
+				return a.second.size() < b.second.size();
+			}
+			return a.first < b.first;
+		}
 
 		trie_tokenizer() :
 			trie_(0) {
@@ -161,7 +168,7 @@ namespace tdc {
 				// First, trim the UTF-8 since that will catch 99% of whitespace
 				// Trim trailing whitespace
 				while (!line8.empty() && std::isspace(line8.back())) {
-					line8.resize(line8.size()-1);
+					line8.resize(line8.size() - 1);
 				}
 				// Trim leading whitespace
 				for (size_t i = 0; i < line8.size(); ++i) {
@@ -182,7 +189,7 @@ namespace tdc {
 				// Now trim the UTF-16 version, just to catch the 1% crazy input that uses Unicode whitespace
 				// Trim trailing whitespace
 				while (!line16.empty() && std::iswspace(line16.back())) {
-					line16.resize(line16.size()-1);
+					line16.resize(line16.size() - 1);
 				}
 				// Trim leading whitespace
 				for (size_t i = 0; i < line16.size(); ++i) {
@@ -199,7 +206,6 @@ namespace tdc {
 				// Reset states
 				pout.line_open();
 				tokens.clear();
-				seen_tokens.clear();
 				outputs.clear();
 
 				// Find all possible valid tokens
@@ -228,7 +234,7 @@ namespace tdc {
 				size_t lastout = 0;
 				for (size_t tmin = 0, tmax = 0; tmax < tokens.size(); tmin = tmax + 1, tmax = tmin) {
 					outputs.clear();
-					std::pair<size_t, size_t> span(tokens[tmin].first, tokens[tmax].second);
+					span = std::make_pair(tokens[tmin].first, tokens[tmax].second);
 					for (size_t to = tmin; to < tokens.size(); ++to) {
 						if (tokens[to].first < span.second) {
 							span.second = std::max(span.second, tokens[to].second);
@@ -239,89 +245,71 @@ namespace tdc {
 						}
 					}
 
-					// Calculate the perfect weight
-					perfw = std::numeric_limits<size_t>::max() - (span.second - span.first);
-
 					// Special case where there is invalid input before any found tokens, or between spans of tokens
 					if (lastout < tokens[tmin].first) {
-						pout.span_open();
-						pout.span_print(line16.begin() + lastout, line16.begin() + span.first);
-						pout.tokens_open();
-						pout.token_open(true);
-						pout.token_print(line16.begin() + lastout, line16.begin() + span.first);
-						pout.token_close();
-						pout.tokens_close();
-						pout.span_close();
+						_span_oneshot(pout, line16.begin() + lastout, line16.begin() + span.first, true);
 					}
 					lastout = span.second;
 
 					// Build all possible combinations of tokens
 					for (; tmin < tmax + 1; ++tmin) {
-						// Check if this will lead to an already found output
-						if (seen_tokens.count(tmin)) {
-							continue;
-						}
-						// If there is a perfect match and we're about to make an imperfect match, bail out...
-						if (!outputs.empty() && outputs.front().first == perfw && span.first != tokens[tmin].first) {
-							continue;
-						}
-
+						weight = std::numeric_limits<size_t>::max();
 						output.clear();
 						_recurse_combos(tmin, tmax + 1);
 					}
 
-					// Test whether there is one and only one perfect match, and if so write that out as invidual spans instead of sub-tokens
-					if (outputs.size() > 1 && outputs[0].first == perfw && outputs[1].first != perfw) {
-						const output_t& output = outputs[0].second;
-						for (size_t i = 0; i < output.size(); ++i) {
-							pout.span_open();
-							pout.span_print(line16.begin() + tokens[output[i]].first, line16.begin() + tokens[output[i]].second);
-							pout.tokens_open();
-							pout.token_open();
-							pout.token_print(line16.begin() + tokens[output[i]].first, line16.begin() + tokens[output[i]].second);
-							pout.token_close();
-							pout.tokens_close();
-							pout.span_close();
+					// Sort outputs by weight and then by least number of tokens
+					std::sort(outputs.begin(), outputs.end(), _compare_outputs);
+
+					// If the first match is a single token perfect match, reduce the list to that one
+					if (outputs.front().second.size() == 1 && outputs.front().first == std::numeric_limits<size_t>::max() - (span.second - span.first)) {
+						outputs.resize(1);
+					}
+
+					// If there is only one best output, output it as separate spans instead
+					if (outputs.size() == 1) {
+						const output_t& output = outputs.front().second;
+						size_t lastout = span.first;
+						for (size_t j = 0; j < output.size(); ++j) {
+							// Output any unclaimed characters between previous output and this token as an invalid token
+							if (lastout < tokens[output[j]].first) {
+								_span_oneshot(pout, line16.begin() + lastout, line16.begin() + tokens[output[j]].first, true);
+							}
+							_span_oneshot(pout, line16.begin() + tokens[output[j]].first, line16.begin() + tokens[output[j]].second);
+							lastout = tokens[output[j]].second;
+						}
+						// Output any unclaimed characters between previous output and the end of the span as an invalid token
+						if (lastout < span.second) {
+							_span_oneshot(pout, line16.begin() + lastout, line16.begin() + span.second, true);
 						}
 						continue;
 					}
 
-					// Sort outputs according to weight
-					std::sort(outputs.begin(), outputs.end());
+					// Calculate how crazy we want the tokenization to get
+					size_t max_tokens = outputs.front().second.size() + static_cast<size_t>(std::log(span.second - span.first) / std::log(2.0));
 
 					// Actually output something...
-					bool perfect = false;
 					pout.span_open();
 					pout.span_print(line16.begin() + span.first, line16.begin() + span.second);
 					for (size_t i = 0; i < outputs.size(); ++i) {
-						// If any perfect matches were found, stop after all perfect matches are output
-						if (outputs[i].first == perfw) {
-							perfect = true;
-						}
-						else if (perfect) {
+						const output_t& output = outputs[i].second;
+						// If we've gone beyond reasonable tokenization, bail out...
+						if (output.size() > max_tokens) {
 							break;
 						}
-
-						const output_t& output = outputs[i].second;
 						pout.tokens_open();
 						size_t lastout = span.first;
 						for (size_t j = 0; j < output.size(); ++j) {
 							// Output any unclaimed characters between previous output and this token as an invalid token
 							if (lastout < tokens[output[j]].first) {
-								pout.token_open(true);
-								pout.token_print(line16.begin() + lastout, line16.begin() + tokens[output[j]].first);
-								pout.token_close();
+								pout.token_print(line16.begin() + lastout, line16.begin() + tokens[output[j]].first, true);
 							}
-							pout.token_open();
 							pout.token_print(line16.begin() + tokens[output[j]].first, line16.begin() + tokens[output[j]].second);
-							pout.token_close();
 							lastout = tokens[output[j]].second;
 						}
 						// Output any unclaimed characters between previous output and the end of the span as an invalid token
 						if (lastout < span.second) {
-							pout.token_open(true);
-							pout.token_print(line16.begin() + lastout, line16.begin() + span.second);
-							pout.token_close();
+							pout.token_print(line16.begin() + lastout, line16.begin() + span.second, true);
 						}
 						pout.tokens_close();
 					}
@@ -330,14 +318,7 @@ namespace tdc {
 
 				// Special case where there is invalid input after any found tokens
 				if (lastout < line16.size()) {
-					pout.span_open();
-					pout.span_print(line16.begin() + lastout, line16.end());
-					pout.tokens_open();
-					pout.token_open(true);
-					pout.token_print(line16.begin() + lastout, line16.end());
-					pout.token_close();
-					pout.tokens_close();
-					pout.span_close();
+					_span_oneshot(pout, line16.begin() + lastout, line16.end(), true);
 				}
 				pout.line_close();
 			}
