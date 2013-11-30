@@ -47,9 +47,10 @@ if(OPT_CPACK)
 	set(CPACK_PACKAGE_CONTACT "Tino Didriksen <mail@tinodidriksen.com>")
 	set(CPACK_PACKAGE_VENDOR "http://tinodidriksen.com/")
 	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A bunch of tools for building and using tries, primarily intended for spellers and tokenizers.")
+	set(CPACK_DEBIAN_PACKAGE_DEPENDS "libgoogle-perftools0|libgoogle-perftools4")
 	set(CPACK_PACKAGE_VERSION ${VERSION})
 
-	set(CPACK_DEBIAN_BUILD_DEPENDS debhelper cmake)
+	set(CPACK_DEBIAN_BUILD_DEPENDS debhelper cmake libgoogle-perftools-dev)
 	set(CPACK_DEBIAN_PACKAGE_SOURCE_COPY svn export --force)
 	set(CPACK_DEBIAN_CHANGELOG "  * Changelog is available at http://visl.sdu.dk/cg3/changelog.txt\n\n")
 	execute_process(COMMAND lsb_release -is
