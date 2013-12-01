@@ -1,0 +1,120 @@
+2013-11-30  tino
+
+	* [r9445] CMakeLists.txt, include/tdc_trie.hpp, src/CMakeLists.txt:
+	  Link against tcmalloc if available
+	* [r9444] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp,
+	  src/trie-tokenize-apertium.cpp: Revamp of how outputs are stored
+	  to only get the best ones, which yields some optimizations and
+	  simplifications. Put a limit on how many combinations to output
+	  per span, based on span length.
+
+2013-11-29  tino
+
+	* [r9440] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp:
+	  break -> continue
+	* [r9432] include/tdc_trie.hpp: I think this works now...
+	* [r9427] include/tdc_trie.hpp: static const -> enum
+	* [r9426] include/tdc_trie.hpp: size_t -> Count
+
+2013-11-28  tino
+
+	* [r9425] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp,
+	  src/trie-print.cpp: Reduced code complexity - breaks backwards
+	  compat with old tries
+	* [r9424] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp:
+	  More optimization
+	* [r9423] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp: Bug
+	  fix and optimization
+	* [r9422] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp:
+	  Weird symbol lookup issue
+	* [r9421] include/tdc_trie_tokenizer.hpp: C++98 compatible
+	* [r9420] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp: Fix
+	  compile error
+	* [r9419] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp:
+	  Optimizations
+	* [r9418] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp,
+	  src/CMakeLists.txt, src/trie-tokenize-apertium.cpp,
+	  src/trie-tokenize.cpp: Tokenizer appears to work
+	* [r9417] include/tdc_trie.hpp, include/tdc_trie_tokenizer.hpp,
+	  src/trie-tokenize.cpp: Pluggable output formatter for tokenizer
+	* [r9416] include/tdc_trie.hpp, include/tdc_trie_speller.hpp,
+	  include/tdc_trie_tokenizer.hpp, src/CMakeLists.txt,
+	  src/trie-tokenize.cpp: Tokenizer works and is quite fast, but
+	  still WIP
+
+2013-11-27  tino
+
+	* [r9413] CMakeLists.txt: PPA generation
+	* [r9412] CMake, CMake/DebSourcePPA.cmake, CMakeLists.txt: PPA
+	  generation
+	* [r9411] include/tdc_trie.hpp, include/tdc_trie_speller.hpp,
+	  update-revision.pl: Added version number; Made lookup distance
+	  limit scale with log2() of input token length
+
+2013-11-26  tino
+
+	* [r9410] src/trie-tokenize.cpp: Find smallest possible tokens,
+	  then try to grow them (WIP)
+	* [r9409] src/trie-tokenize.cpp: Find smallest possible tokens,
+	  then try to grow them (WIP)
+	* [r9408] include/tdc_trie.hpp, src/CMakeLists.txt,
+	  src/trie-tokenize.cpp: Tokenize technically works, but it is an
+	  extremely slow approach
+
+2013-11-15  tino
+
+	* [r9380] include/tdc_trie_speller.hpp, src/trie-spell-foma.cpp:
+	  Checking the lower case variant of a failed upper case word did
+	  not set the upper case variant's validity correctly.
+
+2013-10-20  tino
+
+	* [r9297] CMakeLists.txt: C++11
+	* [r9296] CMakeLists.txt: Require CMake 2.8.0
+	* [r9295] CMakeLists.txt, cmake.sh, src/CMakeLists.txt,
+	  src/trie-build.cpp, src/trie-print.cpp, src/trie-spell-foma.cpp,
+	  src/trie-spell.cpp: Move defines into the project; Show includes
+	  in IDEs
+
+2013-09-08  tino
+
+	* [r9218] include/tdc_trie.hpp: Trie iteration fails, but dunno why
+	  yet.
+
+2013-06-30  tino
+
+	* [r9095] include/tdc_trie_speller.hpp: Typename where needed
+	* [r9094] CMakeLists.txt, include/tdc_trie.hpp,
+	  include/tdc_trie_speller.hpp, src/CMakeLists.txt,
+	  src/trie-spell-foma.cpp, src/trie-spell.cpp: Generalized
+	  trie_speller and added a trie only version as trie-spell
+
+2013-06-25  tino
+
+	* [r9081] src/trie-spell-foma.cpp: Silly mistake
+	* [r9080] CMakeLists.txt, cmake.sh, include/tdc_trie.hpp,
+	  include/utf8.h, include/utf8/checked.h, include/utf8/core.h,
+	  include/utf8/unchecked.h, posix/popen_plus.c, posix/popen_plus.h,
+	  src/CMakeLists.txt, src/trie-build.cpp, src/trie-print.cpp,
+	  src/trie-spell-foma.cpp: Remove +x; Use libc++ on OS X
+	* [r9079] include/tdc_trie.hpp, src/trie-spell-foma.cpp: Serialized
+	  format depends only on template params.
+	* [r9078] src/trie-spell-foma.cpp: Test words from the trie instead
+	  of always 'illu'
+
+2013-06-24  tino
+
+	* [r9077] CMakeLists.txt, posix/popen_plus.h, src/CMakeLists.txt,
+	  src/trie-spell-foma.cpp: Fixes for Posix platforms. Not working
+	  yet, but getting there.
+	* [r9076] include/tdc_trie.hpp, src/trie-build.cpp,
+	  src/trie-print.cpp, src/trie-spell-foma.cpp: trie-spell-foma
+	  should now operate pretty much like ispell/aspell
+	* [r9075] include/tdc_trie.hpp: Fixed silly bug
+	* [r9074] ., CMakeLists.txt, include, include/tdc_trie.hpp,
+	  include/utf8, include/utf8.h, include/utf8/checked.h,
+	  include/utf8/core.h, include/utf8/unchecked.h, posix,
+	  posix/popen_plus.c, posix/popen_plus.h, src, src/CMakeLists.txt,
+	  src/trie-build.cpp, src/trie-print.cpp, src/trie-spell-foma.cpp:
+	  Initial import of trie-tools, with one known bug.
+
