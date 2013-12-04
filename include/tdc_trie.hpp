@@ -61,7 +61,6 @@ struct trie_serializer {
 	}
 };
 
-//*
 template<typename T, typename Y>
 typename T::iterator findchild(T& t, const Y& y) {
 	typename T::iterator it, first = t.begin();
@@ -107,31 +106,6 @@ typename T::const_iterator findchild(const T& t, const Y& y) {
 	}
 	return first;
 }
-
-/*/
-
-template<typename T, typename Y>
-typename T::iterator findchild(T& t, const Y& y) {
-	typename T::iterator it;
-	for (it = t.begin() ; it != t.end() ; ++it) {
-		if (it->first == y) {
-			break;
-		}
-	}
-	return it;
-}
-
-template<typename T, typename Y>
-typename T::const_iterator findchild(const T& t, const Y& y) {
-	typename T::const_iterator it;
-	for (it = t.begin() ; it != t.end() ; ++it) {
-		if (it->first == y) {
-			break;
-		}
-	}
-	return it;
-}
-//*/
 
 template<typename T, typename Y>
 void insertchild(T& t, const Y& y) {
@@ -558,12 +532,16 @@ public:
 		typedef std::multimap<typename String::value_type,node_type*> multichild_type;
 		typedef std::map<size_t,multichild_type> depths_type;
 		depths_type depths;
+		size_t max_child = 0;
 
 		for (size_t i=0 ; i<nodes.size() ; ++i) {
 			depths[nodes[i].children_depth].insert(std::make_pair(nodes[i].self, &nodes[i]));
+			max_child = std::max(max_child, nodes[i].children.size());
+			num_child += nodes[i].children.size();
 		}
 
 		std::cerr << "Compressing " << nodes.size() << " nodes..." << std::endl;
+		std::cerr << "Highest children count: " << max_child << std::endl;
 
 		size_t removed = 0;
 
