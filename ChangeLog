@@ -1,3 +1,25 @@
+2013-12-10  tino
+
+	* [r9494] CMake/DebSourcePPA.cmake, CMakeLists.txt, ChangeLog,
+	  cmake.sh, include/tdc_trie.hpp, include/tdc_trie_speller.hpp,
+	  include/tdc_trie_tokenizer.hpp, include/utf8.h,
+	  include/utf8/checked.h, include/utf8/core.h,
+	  include/utf8/unchecked.h, posix/popen_plus.c, posix/popen_plus.h,
+	  src/CMakeLists.txt, src/trie-build.cpp, src/trie-print.cpp,
+	  src/trie-spell-foma.cpp, src/trie-spell.cpp,
+	  src/trie-tokenize-apertium.cpp, src/trie-tokenize.cpp,
+	  update-revision.pl: svn:eol-style=LF
+
+2013-12-04  tino
+
+	* [r9468] include/tdc_trie.hpp: Cleanup; Output highest children
+	  count
+
+2013-12-01  tino
+
+	* [r9452] CMakeLists.txt, ChangeLog, include/tdc_trie.hpp,
+	  update-revision.pl: Use svn2cl to generate the ChangeLog
+
 2013-11-30  tino
 
 	* [r9445] CMakeLists.txt, include/tdc_trie.hpp, src/CMakeLists.txt:

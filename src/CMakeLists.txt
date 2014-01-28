@@ -34,6 +34,9 @@ link_helper(trie-build)
 add_executable(trie-print trie-print.cpp ${UTF8} ${TRIE})
 link_helper(trie-print)
 
+add_executable(trie-browse trie-browse.cpp ${UTF8} ${TRIE})
+link_helper(trie-browse)
+
 add_executable(trie-tokenize trie-tokenize.cpp ${UTF8} ${TRIE} ${TRIE_TOKENIZE})
 link_helper(trie-tokenize)
 

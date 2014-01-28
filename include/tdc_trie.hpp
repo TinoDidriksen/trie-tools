@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2013, Tino Didriksen Consult
+* Copyright (C) 2013-2014, Tino Didriksen Consult
 * Developed by Tino Didriksen <consult@tinodidriksen.com>
 *
 * This file is part of trie-tools
@@ -28,6 +28,7 @@ References:
 #ifndef TDC_TRIE_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 #define TDC_TRIE_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 
+#include <cstdio>
 #include <stdint.h>
 #include <map>
 #include <vector>
@@ -35,14 +36,16 @@ References:
 #include <algorithm>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 
 namespace tdc {
 
-const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013 Tino Didriksen. All Rights Reserved.";
+const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didriksen. All Rights Reserved.";
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 0;
-const uint32_t TRIE_REVISION = 9452;
+const uint32_t TRIE_REVISION = 9664;
+const uint32_t TRIE_SERIALIZED_REVISION = 9655;
 
 typedef std::basic_string<uint8_t> u8string;
 typedef std::basic_string<uint16_t> u16string;
@@ -137,6 +140,7 @@ private:
 
 		bool terminal;
 		typename String::value_type self;
+		Count num_children;
 		Count children_depth;
 		Count parent;
 		children_type children;
@@ -150,16 +154,10 @@ private:
 
 	public:
 
-		trie_node() :
-			terminal(false),
-			self(0),
-			children_depth(0),
-			parent(0) {
-		}
-
-		trie_node(Count parent, typename String::value_type self) :
+		trie_node(Count parent = 0, typename String::value_type self = String::value_type()) :
 		terminal(false),
 		self(self),
+		num_children(0),
 		children_depth(0),
 		parent(parent)
 		{
@@ -237,6 +235,7 @@ private:
 
 	private:
 		void updateChildrenDepth(root_type& root, Count depth=0) {
+			++num_children;
 			children_depth = std::max(children_depth, depth);
 			if (parent != static_cast<Count>(this - &root.nodes[0])) {
 				root.nodes[parent].updateChildrenDepth(root, depth+1);
@@ -245,6 +244,9 @@ private:
 
 		bool equals(const root_type& root, const node_type* second) const {
 			if (self != second->self) {
+				return false;
+			}
+			if (num_children != second->num_children) {
 				return false;
 			}
 			if (children_depth != second->children_depth) {
@@ -352,7 +354,84 @@ public:
 		}
 	};
 
+	class browser {
+	private:
+		const trie *owner;
+		Count node;
+
+	public:
+		class browser_out {
+		private:
+			const trie *owner;
+			Count node;
+
+		public:
+			browser_out(const trie *owner = 0, Count node = npos) :
+				owner(owner),
+				node(node) {
+			}
+
+			const_iterator begin() const {
+				return const_iterator(owner, node);
+			}
+
+			const_iterator end() const {
+				return const_iterator(owner);
+			}
+		};
+
+		class browser_iter {
+		private:
+			const trie *owner;
+			Count node;
+			Count which;
+
+		public:
+			browser_iter(const trie *owner = 0, Count node = npos, Count which = 0) :
+				owner(owner),
+				node(node),
+				which(which) {
+			}
+
+			browser_out values() const {
+				return browser_out(owner, owner->nodes[node].children[which].second);
+			}
+
+			std::pair<typename String::value_type, Count> operator*() const {
+				const trie_node::children_type& children = owner->nodes[node].children;
+				return std::make_pair(children[which].first, owner->nodes[children[which].second].num_children);
+			}
+
+			bool operator==(const browser_iter& o) {
+				return (owner == o.owner) && (node == o.node) && (which == o.which);
+			}
+
+			bool operator!=(const browser_iter& o) {
+				return !(*this == o);
+			}
+
+			browser_iter& operator++() {
+				++which;
+				return *this;
+			}
+		};
+
+		browser(const trie *owner = 0, Count node = npos) :
+			owner(owner),
+			node(node) {
+		}
+
+		browser_iter begin() const {
+			return browser_iter(owner, node, 0);
+		}
+
+		browser_iter end() const {
+			return browser_iter(owner, node, owner->nodes[node].children.size());
+		}
+	};
+
 	friend class const_iterator;
+	friend class browser;
 
 	typedef std::map<String,size_t> query_type;
 	typedef std::pair<size_t,bool> traverse_type;
@@ -369,6 +448,8 @@ public:
 	void serialize(std::ostream& out) const {
 		const char *trie = "TRIE";
 		out.write(trie, 4);
+		out.write(reinterpret_cast<const char*>(&TRIE_SERIALIZED_REVISION), sizeof(TRIE_SERIALIZED_REVISION));
+
 		uint8_t z = sizeof(typename String::value_type);
 		out.write(reinterpret_cast<const char*>(&z), sizeof(z));
 
@@ -376,18 +457,14 @@ public:
 
 		Count value = static_cast<Count>(nodes.size());
 		out.write(reinterpret_cast<const char*>(&value), sizeof(value));
-		for (size_t n=0 ; n<nodes.size() ; ++n) {
+		for (size_t n = 0; n<nodes.size(); ++n) {
 			serializer.serialize(out, nodes[n].self);
-		}
-		for (size_t n=0 ; n<nodes.size() ; ++n) {
+			out.write(reinterpret_cast<const char*>(&nodes[n].num_children), sizeof(nodes[n].num_children));
 			out.write(reinterpret_cast<const char*>(&nodes[n].terminal), sizeof(nodes[n].terminal));
-		}
-		for (size_t n=0 ; n<nodes.size() ; ++n) {
+
 			Count value = static_cast<Count>(nodes[n].children.size());
 			out.write(reinterpret_cast<const char*>(&value), sizeof(value));
-		}
-		for (size_t n=0 ; n<nodes.size() ; ++n) {
-			for (size_t c=0 ; c<nodes[n].children.size() ; ++c) {
+			for (size_t c = 0; c<nodes[n].children.size(); ++c) {
 				out.write(reinterpret_cast<const char*>(&nodes[n].children[c].second), sizeof(nodes[n].children[c].second));
 			}
 		}
@@ -396,16 +473,28 @@ public:
 	void unserialize(std::istream& in) {
 		clear();
 
-		std::string trie(4,0);
+		std::string trie(4, 0);
 		in.read(&trie[0], 4);
 		if (trie != "TRIE") {
-			throw -1;
+			throw std::runtime_error("Unserialize stream did not start with magic byte sequence TRIE");
+		}
+
+		uint32_t rev = 0;
+		in.read(reinterpret_cast<char*>(&rev), sizeof(rev));
+		if (rev != TRIE_SERIALIZED_REVISION) {
+			char _msg[] = "Unserialize expected revision %u but data had revision %u";
+			std::string msg(sizeof(_msg)+11 + 11 + 1, 0);
+			msg.resize(sprintf(&msg[0], _msg, TRIE_SERIALIZED_REVISION, rev));
+			throw std::runtime_error(msg);
 		}
 
 		uint8_t s;
 		in.read(reinterpret_cast<char*>(&s), sizeof(s));
 		if (s != sizeof(typename String::value_type)) {
-			throw -1;
+			char _msg[] = "Unserialize expected code unit width %u but data had width %u";
+			std::string msg(sizeof(_msg)+11 + 11 + 1, 0);
+			msg.resize(sprintf(&msg[0], _msg, sizeof(typename String::value_type), s));
+			throw std::runtime_error(msg);
 		}
 
 		in.read(reinterpret_cast<char*>(&compressed), sizeof(compressed));
@@ -413,22 +502,22 @@ public:
 		Count z;
 		in.read(reinterpret_cast<char*>(&z), sizeof(z));
 		nodes.resize(z);
-		for (size_t n=0 ; n<z ; ++n) {
+		for (size_t n = 0; n < z; ++n) {
 			nodes[n].self = serializer.unserialize(in);
-		}
-		for (size_t n=0 ; n<z ; ++n) {
+			in.read(reinterpret_cast<char*>(&nodes[n].num_children), sizeof(nodes[n].num_children));
 			in.read(reinterpret_cast<char*>(&nodes[n].terminal), sizeof(nodes[n].terminal));
-		}
-		for (size_t n=0 ; n<z ; ++n) {
+
 			Count c;
 			in.read(reinterpret_cast<char*>(&c), sizeof(c));
 			nodes[n].children.resize(c);
-		}
-		for (size_t n=0 ; n<z ; ++n) {
-			for (size_t c=0 ; c<nodes[n].children.size() ; ++c) {
+			for (size_t c = 0; c < nodes[n].children.size(); ++c) {
 				in.read(reinterpret_cast<char*>(&nodes[n].children[c].second), sizeof(nodes[n].children[c].second));
-				nodes[n].children[c].first = nodes[nodes[n].children[c].second].self;
 				nodes[nodes[n].children[c].second].parent = static_cast<Count>(n);
+			}
+		}
+		for (size_t n = 0; n < z; ++n) {
+			for (size_t c = 0; c < nodes[n].children.size(); ++c) {
+				nodes[n].children[c].first = nodes[nodes[n].children[c].second].self;
 			}
 		}
 	}
@@ -524,6 +613,10 @@ public:
 		return rv;
 	}
 
+	browser browse(size_t n=npos) const {
+		return browser(this, static_cast<Count>(n));
+	}
+
 	void compress() {
 		if (compressed) {
 			return;
@@ -537,7 +630,6 @@ public:
 		for (size_t i=0 ; i<nodes.size() ; ++i) {
 			depths[nodes[i].children_depth].insert(std::make_pair(nodes[i].self, &nodes[i]));
 			max_child = std::max(max_child, nodes[i].children.size());
-			num_child += nodes[i].children.size();
 		}
 
 		std::cerr << "Compressing " << nodes.size() << " nodes..." << std::endl;
