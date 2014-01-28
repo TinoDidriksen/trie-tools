@@ -1,3 +1,8 @@
+2014-01-28  tino
+
+	* [r9664] ChangeLog, include/tdc_trie.hpp, src/CMakeLists.txt,
+	  src/trie-browse.cpp, update-revision.pl: Added a trie browser
+
 2013-12-10  tino
 
 	* [r9494] CMake/DebSourcePPA.cmake, CMakeLists.txt, ChangeLog,

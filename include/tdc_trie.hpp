@@ -44,7 +44,7 @@ const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didrikse
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 0;
-const uint32_t TRIE_REVISION = 9664;
+const uint32_t TRIE_REVISION = 9665;
 const uint32_t TRIE_SERIALIZED_REVISION = 9655;
 
 typedef std::basic_string<uint8_t> u8string;
@@ -154,7 +154,7 @@ private:
 
 	public:
 
-		trie_node(Count parent = 0, typename String::value_type self = String::value_type()) :
+		trie_node(Count parent = 0, typename String::value_type self = typename String::value_type()) :
 		terminal(false),
 		self(self),
 		num_children(0),
@@ -398,7 +398,7 @@ public:
 			}
 
 			std::pair<typename String::value_type, Count> operator*() const {
-				const trie_node::children_type& children = owner->nodes[node].children;
+				const typename trie_node::children_type& children = owner->nodes[node].children;
 				return std::make_pair(children[which].first, owner->nodes[children[which].second].num_children);
 			}
 
