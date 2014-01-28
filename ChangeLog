@@ -1,5 +1,8 @@
 2014-01-28  tino
 
+	* [r9667] CMakeLists.txt: Ubuntu 13.04 is EOL, so drop from PPA
+	* [r9666] ChangeLog, include/tdc_trie.hpp, src/trie-browse.cpp:
+	  Ubuntu 12.04 doesn't know string.pop_back()
 	* [r9665] ChangeLog, include/tdc_trie.hpp: Missing typename
 	* [r9664] ChangeLog, include/tdc_trie.hpp, src/CMakeLists.txt,
 	  src/trie-browse.cpp, update-revision.pl: Added a trie browser

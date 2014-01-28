@@ -44,7 +44,7 @@ const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didrikse
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 0;
-const uint32_t TRIE_REVISION = 9666;
+const uint32_t TRIE_REVISION = 9670;
 const uint32_t TRIE_SERIALIZED_REVISION = 9655;
 
 typedef std::basic_string<uint8_t> u8string;

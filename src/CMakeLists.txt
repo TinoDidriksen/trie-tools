@@ -49,4 +49,12 @@ link_helper(trie-spell)
 add_executable(trie-spell-foma trie-spell-foma.cpp ${UTF8} ${TRIE} ${TRIE_SPELL} ${POPEN_PLUS_C})
 link_helper(trie-spell-foma)
 
-install(TARGETS trie-build trie-print trie-spell trie-spell-foma RUNTIME DESTINATION bin)
+install(TARGETS
+	trie-build
+	trie-print
+	trie-browse
+	trie-tokenize
+	trie-tokenize-apertium
+	trie-spell
+	trie-spell-foma
+	RUNTIME DESTINATION bin)
