@@ -1,5 +1,6 @@
 2014-01-28  tino
 
+	* [r9665] ChangeLog, include/tdc_trie.hpp: Missing typename
 	* [r9664] ChangeLog, include/tdc_trie.hpp, src/CMakeLists.txt,
 	  src/trie-browse.cpp, update-revision.pl: Added a trie browser
 

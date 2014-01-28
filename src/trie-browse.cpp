@@ -100,8 +100,7 @@ void trie_browse(const trie_t& trie, std::istream& in, std::ostream& out) {
 					}
 					char8 += "\", ";
 				}
-				char8.pop_back();
-				char8.pop_back();
+				char8.resize(char8.size() - 2);
 				buffer8 += '[';
 				buffer8 += char8;
 				buffer8 += ']';
@@ -115,8 +114,7 @@ void trie_browse(const trie_t& trie, std::istream& in, std::ostream& out) {
 			buffer8 += ',';
 			buffer8 += ' ';
 		}
-		buffer8.pop_back();
-		buffer8.pop_back();
+		buffer8.resize(buffer8.size()-2);
 		buffer8 += '}';
 		out << buffer8 << std::endl;
 	}
