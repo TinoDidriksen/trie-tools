@@ -44,6 +44,8 @@ void trie_print(const trie_t& trie, std::ostream& out) {
 
 int main(int argc, char *argv[]) {
 	std::vector<std::string> args(argv, argv+argc);
+	std::cin.sync_with_stdio(false);
+	std::cout.sync_with_stdio(false);
 
 	trie_t trie;
 
