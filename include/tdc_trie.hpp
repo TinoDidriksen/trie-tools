@@ -44,7 +44,7 @@ const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didrikse
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 0;
-const uint32_t TRIE_REVISION = 9670;
+const uint32_t TRIE_REVISION = 9682;
 const uint32_t TRIE_SERIALIZED_REVISION = 9655;
 
 typedef std::basic_string<uint8_t> u8string;
@@ -63,6 +63,26 @@ struct trie_serializer {
 		return value;
 	}
 };
+
+template<typename T, typename Y>
+typename T::iterator lower_bound(T& t, const Y& y) {
+	typename T::iterator it, first = t.begin();
+	size_t count = t.size(), step;
+
+	while (count > 0) {
+		it = first;
+		step = count / 2;
+		it += step;
+		if (it->first < y) {
+			first = ++it;
+			count -= step + 1;
+		}
+		else {
+			count = step;
+		}
+	}
+	return first;
+}
 
 template<typename T, typename Y>
 typename T::iterator findchild(T& t, const Y& y) {
@@ -111,17 +131,17 @@ typename T::const_iterator findchild(const T& t, const Y& y) {
 }
 
 template<typename T, typename Y>
-void insertchild(T& t, const Y& y) {
+typename T::iterator insertchild(T& t, Y&& y) {
 	typename T::iterator it;
 	for (it = t.begin() ; it != t.end() ; ++it) {
 		if (it->first == y.first) {
-			return;
+			return it;
 		}
 		if (it->first > y.first) {
 			break;
 		}
 	}
-	t.insert(it, y);
+	return t.insert(it, std::move(y));
 }
 
 template<typename String, typename Count=uint32_t, typename Serializer=trie_serializer<typename String::value_type> >
@@ -140,7 +160,7 @@ private:
 
 		bool terminal;
 		typename String::value_type self;
-		Count num_children;
+		Count num_terminals;
 		Count children_depth;
 		Count parent;
 		children_type children;
@@ -157,7 +177,7 @@ private:
 		trie_node(Count parent = 0, typename String::value_type self = typename String::value_type()) :
 		terminal(false),
 		self(self),
-		num_children(0),
+		num_terminals(0),
 		children_depth(0),
 		parent(parent)
 		{
@@ -235,7 +255,7 @@ private:
 
 	private:
 		void updateChildrenDepth(root_type& root, Count depth=0) {
-			++num_children;
+			++num_terminals;
 			children_depth = std::max(children_depth, depth);
 			if (parent != static_cast<Count>(this - &root.nodes[0])) {
 				root.nodes[parent].updateChildrenDepth(root, depth+1);
@@ -246,7 +266,7 @@ private:
 			if (self != second->self) {
 				return false;
 			}
-			if (num_children != second->num_children) {
+			if (num_terminals != second->num_terminals) {
 				return false;
 			}
 			if (children_depth != second->children_depth) {
@@ -399,7 +419,7 @@ public:
 
 			std::pair<typename String::value_type, Count> operator*() const {
 				const typename trie_node::children_type& children = owner->nodes[node].children;
-				return std::make_pair(children[which].first, owner->nodes[children[which].second].num_children);
+				return std::make_pair(children[which].first, owner->nodes[children[which].second].num_terminals);
 			}
 
 			bool operator==(const browser_iter& o) {
@@ -459,7 +479,7 @@ public:
 		out.write(reinterpret_cast<const char*>(&value), sizeof(value));
 		for (size_t n = 0; n<nodes.size(); ++n) {
 			serializer.serialize(out, nodes[n].self);
-			out.write(reinterpret_cast<const char*>(&nodes[n].num_children), sizeof(nodes[n].num_children));
+			out.write(reinterpret_cast<const char*>(&nodes[n].num_terminals), sizeof(nodes[n].num_terminals));
 			out.write(reinterpret_cast<const char*>(&nodes[n].terminal), sizeof(nodes[n].terminal));
 
 			Count value = static_cast<Count>(nodes[n].children.size());
@@ -504,7 +524,7 @@ public:
 		nodes.resize(z);
 		for (size_t n = 0; n < z; ++n) {
 			nodes[n].self = serializer.unserialize(in);
-			in.read(reinterpret_cast<char*>(&nodes[n].num_children), sizeof(nodes[n].num_children));
+			in.read(reinterpret_cast<char*>(&nodes[n].num_terminals), sizeof(nodes[n].num_terminals));
 			in.read(reinterpret_cast<char*>(&nodes[n].terminal), sizeof(nodes[n].terminal));
 
 			Count c;
@@ -622,13 +642,18 @@ public:
 			return;
 		}
 
-		typedef std::multimap<typename String::value_type,node_type*> multichild_type;
-		typedef std::map<size_t,multichild_type> depths_type;
-		depths_type depths;
+		typedef std::vector<std::pair<typename String::value_type,std::vector<Count>>> multichild_type;
+		typedef std::vector<multichild_type> depths_type;
+		depths_type depths(nodes[0].children_depth + 1);
 		size_t max_child = 0;
 
-		for (size_t i=0 ; i<nodes.size() ; ++i) {
-			depths[nodes[i].children_depth].insert(std::make_pair(nodes[i].self, &nodes[i]));
+		for (size_t i=1 ; i<nodes.size() ; ++i) {
+			multichild_type& mchild = depths[nodes[i].children_depth];
+			auto it = lower_bound(mchild, nodes[i].self);
+			if (it == mchild.end() || it->first != nodes[i].self) {
+				it = mchild.insert(it, std::make_pair(nodes[i].self, std::vector<Count>()));
+			}
+			it->second.push_back(i);
 			max_child = std::max(max_child, nodes[i].children.size());
 		}
 
@@ -637,38 +662,38 @@ public:
 
 		size_t removed = 0;
 
-		for (size_t i=0 ; ; ++i) {
-			if (depths.find(i) == depths.end()) {
-				break;
-			}
-			std::cerr << "Handling depth " << i << "..." << std::flush;
+		for (auto& depth : depths) {
+			std::cerr << "Handling depth " << (&depth - &depths[0]) << "..." << std::flush;
 
-			multichild_type& mchild = depths[i];
 			bool did_compress = false;
 
-			typename multichild_type::iterator onode;
-			for (onode = mchild.begin() ; onode != mchild.end() ; ++onode) {
-				typename multichild_type::iterator inode = onode;
-				++inode;
-				for ( ; inode != mchild.end() ; ) {
-					node_type *first = onode->second;
-					node_type *second = inode->second;
-					if (first->self != second->self) {
-						break;
-					}
-					if (second->parent == std::numeric_limits<Count>::max() || !first->equals(*this, second)) {
-						++inode;
+			for (auto& mchildren : depth) {
+				auto& mchild = mchildren.second;
+
+				for (auto onode = mchild.begin(); onode != mchild.end(); ++onode) {
+					if (*onode == 0) {
 						continue;
 					}
+					node_type *first = &nodes[*onode];
 
-					findchild(nodes[second->parent].children, first->self)->second = static_cast<Count>(first - &nodes[0]);
-					second->parent = std::numeric_limits<Count>::max();
-					second->self = typename String::value_type();
-					second->children.clear();
-					second->children_depth = 0;
-					mchild.erase(inode++);
-					did_compress = true;
-					++removed;
+					for (auto inode = onode + 1; inode != mchild.end(); ++inode) {
+						if (*inode == 0) {
+							continue;
+						}
+						node_type *second = &nodes[*inode];
+						if (second->parent == std::numeric_limits<Count>::max() || !first->equals(*this, second)) {
+							continue;
+						}
+
+						findchild(nodes[second->parent].children, first->self)->second = static_cast<Count>(first - &nodes[0]);
+						second->parent = std::numeric_limits<Count>::max();
+						second->self = typename String::value_type();
+						second->children.clear();
+						second->children_depth = 0;
+						*inode = 0;
+						did_compress = true;
+						++removed;
+					}
 				}
 			}
 
