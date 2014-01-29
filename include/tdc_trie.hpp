@@ -43,8 +43,8 @@ namespace tdc {
 const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didriksen. All Rights Reserved.";
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
-const uint32_t TRIE_VERSION_PATCH = 0;
-const uint32_t TRIE_REVISION = 9682;
+const uint32_t TRIE_VERSION_PATCH = 1;
+const uint32_t TRIE_REVISION = 9685;
 const uint32_t TRIE_SERIALIZED_REVISION = 9655;
 
 typedef std::basic_string<uint8_t> u8string;
@@ -65,7 +65,7 @@ struct trie_serializer {
 };
 
 template<typename T, typename Y>
-typename T::iterator lower_bound(T& t, const Y& y) {
+inline typename T::iterator lower_bound(T& t, const Y& y) {
 	typename T::iterator it, first = t.begin();
 	size_t count = t.size(), step;
 
@@ -85,22 +85,9 @@ typename T::iterator lower_bound(T& t, const Y& y) {
 }
 
 template<typename T, typename Y>
-typename T::iterator findchild(T& t, const Y& y) {
-	typename T::iterator it, first = t.begin();
-	size_t count = t.size(), step;
+inline typename T::iterator findchild(T& t, const Y& y) {
+	typename T::iterator first = lower_bound(t, y);
 
-	while (count > 0) {
-		it = first;
-		step = count / 2;
-		it += step;
-		if (it->first < y) {
-			first = ++it;
-			count -= step + 1;
-		}
-		else {
-			count = step;
-		}
-	}
 	if (first != t.end() && first->first != y) {
 		first = t.end();
 	}
@@ -108,7 +95,7 @@ typename T::iterator findchild(T& t, const Y& y) {
 }
 
 template<typename T, typename Y>
-typename T::const_iterator findchild(const T& t, const Y& y) {
+inline typename T::const_iterator findchild(const T& t, const Y& y) {
 	typename T::const_iterator it, first = t.begin();
 	size_t count = t.size(), step;
 
@@ -131,7 +118,7 @@ typename T::const_iterator findchild(const T& t, const Y& y) {
 }
 
 template<typename T, typename Y>
-typename T::iterator insertchild(T& t, Y&& y) {
+inline typename T::iterator insertchild(T& t, Y&& y) {
 	typename T::iterator it;
 	for (it = t.begin() ; it != t.end() ; ++it) {
 		if (it->first == y.first) {
@@ -162,7 +149,6 @@ private:
 		typename String::value_type self;
 		Count num_terminals;
 		Count children_depth;
-		Count parent;
 		children_type children;
 
 		void buildString(const query_path_type& qp, String& in) const {
@@ -174,61 +160,60 @@ private:
 
 	public:
 
-		trie_node(Count parent = 0, typename String::value_type self = typename String::value_type()) :
+		trie_node(typename String::value_type self = typename String::value_type()) :
 		terminal(false),
 		self(self),
 		num_terminals(0),
-		children_depth(0),
-		parent(parent)
+		children_depth(0)
 		{
 		}
 
-		bool add(root_type& root, const String& entry, size_t pos=0, Count depth=0) {
+		bool add(root_type& root, const String& entry, size_t pos=0) {
+			++num_terminals;
+			children_depth = std::max(children_depth, entry.size() - pos);
 			if (pos < entry.size()) {
 				typename children_type::iterator child = findchild(children, entry[pos]);
 				if (child != children.end()) {
 					node_type& node = root.nodes[child->second];
-					return node.add(root, entry, pos+1, depth+1);
+					return node.add(root, entry, pos+1);
 				}
 				else {
-					Count p = static_cast<Count>(this - &root.nodes[0]);
 					Count z = static_cast<Count>(root.nodes.size());
 					insertchild(children, std::make_pair(entry[pos], z));
 					root.nodes.resize(z+1);
-					root.nodes.back() = node_type(p, entry[pos]);
-					root.nodes.back().add(root, entry, pos+1, depth+1);
+					root.nodes.back() = node_type(entry[pos]);
+					root.nodes.back().add(root, entry, pos+1);
 					return true;
 				}
 			}
 			else {
 				if (!terminal) {
 					terminal = true;
-					updateChildrenDepth(root);
 					return true;
 				}
 			}
 			return false;
 		}
 
-		void query(const root_type& root, const String& entry, size_t pos, query_type& collected, query_path_type& qp, size_t maxdist=0, size_t curdist=0, Count depth=0) const {
+		void query(const root_type& root, const String& entry, size_t pos, query_type& collected, query_path_type& qp, size_t maxdist=0, size_t curdist=0) const {
 			qp.push_back(this);
 
 			if (pos < entry.size()) {
 				typename children_type::const_iterator child = findchild(children, entry[pos]);
 				if (child != children.end()) {
-					root.nodes[child->second].query(root, entry, pos+1, collected, qp, maxdist, curdist, depth+1);
+					root.nodes[child->second].query(root, entry, pos+1, collected, qp, maxdist, curdist);
 				}
 			}
 
 			if (curdist < maxdist) {
 				for (typename children_type::const_iterator child = children.begin() ; child != children.end() ; ++child) {
 					if (pos >= entry.size() || child->first != entry[pos]) {
-						root.nodes[child->second].query(root, entry, pos, collected, qp, maxdist, curdist+1, depth+1);
-						root.nodes[child->second].query(root, entry, pos+1, collected, qp, maxdist, curdist+1, depth+1);
+						root.nodes[child->second].query(root, entry, pos, collected, qp, maxdist, curdist+1);
+						root.nodes[child->second].query(root, entry, pos+1, collected, qp, maxdist, curdist+1);
 					}
 					for (size_t i = 1 ; pos+i < entry.size() ; ++i) {
 						if (child->first == entry[pos+i]) {
-							root.nodes[child->second].query(root, entry, pos+i+1, collected, qp, maxdist, curdist+i, depth+1);
+							root.nodes[child->second].query(root, entry, pos+i+1, collected, qp, maxdist, curdist+i);
 						}
 					}
 				}
@@ -254,14 +239,6 @@ private:
 		}
 
 	private:
-		void updateChildrenDepth(root_type& root, Count depth=0) {
-			++num_terminals;
-			children_depth = std::max(children_depth, depth);
-			if (parent != static_cast<Count>(this - &root.nodes[0])) {
-				root.nodes[parent].updateChildrenDepth(root, depth+1);
-			}
-		}
-
 		bool equals(const root_type& root, const node_type* second) const {
 			if (self != second->self) {
 				return false;
@@ -532,7 +509,6 @@ public:
 			nodes[n].children.resize(c);
 			for (size_t c = 0; c < nodes[n].children.size(); ++c) {
 				in.read(reinterpret_cast<char*>(&nodes[n].children[c].second), sizeof(nodes[n].children[c].second));
-				nodes[nodes[n].children[c].second].parent = static_cast<Count>(n);
 			}
 		}
 		for (size_t n = 0; n < z; ++n) {
@@ -645,9 +621,10 @@ public:
 		typedef std::vector<std::pair<typename String::value_type,std::vector<Count>>> multichild_type;
 		typedef std::vector<multichild_type> depths_type;
 		depths_type depths(nodes[0].children_depth + 1);
+		std::vector<Count> parents(nodes.size(), std::numeric_limits<Count>::max());
 		size_t max_child = 0;
 
-		for (size_t i=1 ; i<nodes.size() ; ++i) {
+		for (size_t i=0 ; i<nodes.size() ; ++i) {
 			multichild_type& mchild = depths[nodes[i].children_depth];
 			auto it = lower_bound(mchild, nodes[i].self);
 			if (it == mchild.end() || it->first != nodes[i].self) {
@@ -655,6 +632,9 @@ public:
 			}
 			it->second.push_back(i);
 			max_child = std::max(max_child, nodes[i].children.size());
+			for (auto& ch : nodes[i].children) {
+				parents[ch.second] = i;
+			}
 		}
 
 		std::cerr << "Compressing " << nodes.size() << " nodes..." << std::endl;
@@ -681,12 +661,12 @@ public:
 							continue;
 						}
 						node_type *second = &nodes[*inode];
-						if (second->parent == std::numeric_limits<Count>::max() || !first->equals(*this, second)) {
+						if (parents[*inode] == std::numeric_limits<Count>::max() || !first->equals(*this, second)) {
 							continue;
 						}
 
-						findchild(nodes[second->parent].children, first->self)->second = static_cast<Count>(first - &nodes[0]);
-						second->parent = std::numeric_limits<Count>::max();
+						findchild(nodes[parents[*inode]].children, first->self)->second = static_cast<Count>(first - &nodes[0]);
+						parents[*inode] = std::numeric_limits<Count>::max();
 						second->self = typename String::value_type();
 						second->children.clear();
 						second->children_depth = 0;
@@ -713,7 +693,7 @@ public:
 		tosave.reserve(nodes.size()-removed);
 
 		for (Count i=0 ; i<nodes.size() ; ++i) {
-			if (nodes[i].parent != std::numeric_limits<Count>::max() || nodes[i].self != typename String::value_type()
+			if (parents[i] != std::numeric_limits<Count>::max() || nodes[i].self != typename String::value_type()
 				|| nodes[i].children.size() != 0 || nodes[i].children_depth != 0) {
 				oldnew[i] = static_cast<Count>(tosave.size());
 				tosave.push_back(nodes[i]);
@@ -722,7 +702,6 @@ public:
 
 		nodes.swap(tosave);
 		for (size_t i=0 ; i<nodes.size() ; ++i) {
-			nodes[i].parent = oldnew[nodes[i].parent];
 			for (size_t c=0 ; c<nodes[i].children.size() ; ++c) {
 				nodes[i].children[c].second = oldnew[nodes[i].children[c].second];
 			}

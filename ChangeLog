@@ -1,3 +1,9 @@
+2014-01-29  tino
+
+	* [r9682] ChangeLog, include/tdc_trie.hpp: Trie compression is 20%
+	  faster, performs 30+% fewer allocations, and uses 20% less
+	  memory.
+
 2014-01-28  tino
 
 	* [r9670] ChangeLog, include/tdc_trie.hpp, src/CMakeLists.txt:
