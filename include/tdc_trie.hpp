@@ -44,7 +44,7 @@ const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didrikse
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 1;
-const uint32_t TRIE_REVISION = 9685;
+const uint32_t TRIE_REVISION = 9686;
 const uint32_t TRIE_SERIALIZED_REVISION = 9655;
 
 typedef std::basic_string<uint8_t> u8string;
@@ -170,7 +170,7 @@ private:
 
 		bool add(root_type& root, const String& entry, size_t pos=0) {
 			++num_terminals;
-			children_depth = std::max(children_depth, entry.size() - pos);
+			children_depth = std::max(children_depth, static_cast<Count>(entry.size() - pos));
 			if (pos < entry.size()) {
 				typename children_type::iterator child = findchild(children, entry[pos]);
 				if (child != children.end()) {

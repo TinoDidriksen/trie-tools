@@ -1,5 +1,7 @@
 2014-01-29  tino
 
+	* [r9685] CMakeLists.txt, ChangeLog, include/tdc_trie.hpp:
+	  Eliminate the node.parent member; PPAs for Ubuntu 14.04
 	* [r9682] ChangeLog, include/tdc_trie.hpp: Trie compression is 20%
 	  faster, performs 30+% fewer allocations, and uses 20% less
 	  memory.
