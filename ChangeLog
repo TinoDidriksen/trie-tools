@@ -1,5 +1,11 @@
 2014-01-29  tino
 
+	* [r9687] src/trie-browse.cpp, src/trie-build.cpp,
+	  src/trie-print.cpp, src/trie-spell-foma.cpp, src/trie-spell.cpp,
+	  src/trie-tokenize-apertium.cpp, src/trie-tokenize.cpp:
+	  sync_with_stdio()
+	* [r9686] ChangeLog, include/tdc_trie.hpp: std::max being its usual
+	  annoying self
 	* [r9685] CMakeLists.txt, ChangeLog, include/tdc_trie.hpp:
 	  Eliminate the node.parent member; PPAs for Ubuntu 14.04
 	* [r9682] ChangeLog, include/tdc_trie.hpp: Trie compression is 20%

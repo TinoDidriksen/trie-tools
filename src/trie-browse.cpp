@@ -33,9 +33,9 @@ inline void appendJSON(std::string& str, char chr) {
 		str += '\\';
 		str += 'n';
 	}
-	else if (chr == '\\') {
+	else if (chr == '\\' || chr == '"') {
 		str += '\\';
-		str += '\\';
+		str += chr;
 	}
 	else {
 		str += chr;
@@ -47,14 +47,22 @@ inline void appendJSON(std::string& str, uint16_t chr) {
 		appendJSON(str, static_cast<char>(chr));
 	}
 	else {
-		utf8::utf16to8(&chr, &chr + 1, std::back_inserter(str));
+		try {
+			utf8::utf16to8(&chr, &chr + 1, std::back_inserter(str));
+		}
+		catch (utf8::invalid_utf16&) {
+			str += "\xEF\xBF\xBD";
+		}
 	}
 }
 
 void trie_browse(const trie_t& trie, std::istream& in, std::ostream& out) {
 	std::string line8, char8, buffer8(1, '{');
 	tdc::u16string line16;
+
 	while (std::getline(in, line8)) {
+		std::cerr << line8 << std::endl;
+
 		buffer8.resize(1);
 		line16.clear();
 		utf8::utf8to16(line8.begin(), line8.end(), std::back_inserter(line16));
@@ -125,25 +133,40 @@ int main(int argc, char *argv[]) {
 	std::cin.sync_with_stdio(false);
 	std::cout.sync_with_stdio(false);
 
+	bool daemon = false;
+	for (auto it = args.begin(); it != args.end();) {
+		if (*it == "-d") {
+			daemon = true;
+			it = args.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+
 	trie_t trie;
 	{
 		std::ifstream in_trie(args[1], std::ios::binary);
 		trie.unserialize(in_trie);
 	}
 
-	std::unique_ptr<std::ifstream> in_p;
-	std::unique_ptr<std::ofstream> out_p;
-	std::istream *in = &std::cin;
-	std::ostream *out = &std::cout;
+	do {
+		std::unique_ptr<std::ifstream> in_p;
+		std::unique_ptr<std::ofstream> out_p;
+		std::istream *in = &std::cin;
+		std::ostream *out = &std::cout;
 
-	if (args.size() > 2 && args[2] != "-") {
-		in_p.reset(new std::ifstream(args[2], std::ios::binary));
-		in = in_p.get();
-	}
-	if (args.size() > 3 && args[3] != "-") {
-		out_p.reset(new std::ofstream(args[3], std::ios::binary));
-		out = out_p.get();
-	}
+		if (args.size() > 2 && args[2] != "-") {
+			in_p.reset(new std::ifstream(args[2], std::ios::binary));
+			in = in_p.get();
+		}
+		if (args.size() > 3 && args[3] != "-") {
+			out_p.reset(new std::ofstream(args[3], std::ios::binary));
+			out = out_p.get();
+		}
 
-	trie_browse(trie, *in, *out);
+		in->clear();
+		out->clear();
+		trie_browse(trie, *in, *out);
+	} while (daemon);
 }
