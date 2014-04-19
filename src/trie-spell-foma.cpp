@@ -243,5 +243,5 @@ int main(int argc, char *argv[]) {
 
 	trie_speller_foma speller(args[1], args[2]);
 
-	speller.check_stream_utf8(std::cin, std::cout);
+	speller.ispell_stream_utf8(std::cin, std::cout);
 }

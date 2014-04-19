@@ -30,5 +30,5 @@ int main(int argc, char *argv[]) {
 
 	tdc::trie_speller<> speller(args[1]);
 
-	speller.check_stream_utf8(std::cin, std::cout);
+	speller.ispell_stream_utf8(std::cin, std::cout);
 }

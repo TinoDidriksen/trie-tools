@@ -181,15 +181,36 @@ public:
 		return alts;
 	}
 
-	virtual void check_stream_utf8(std::istream& in, std::ostream& out) {
+	void ispell_stream_utf8(std::istream& in, std::ostream& out) {
 		out << "@(#) International Ispell Version 3.1.20 (but really trie-tools " << TRIE_VERSION_MAJOR << "." << TRIE_VERSION_MINOR << "." << TRIE_VERSION_PATCH << "." << TRIE_REVISION << ")" << std::endl;
 
 		std::string line8;
 		std::string out8;
 		tdc::u16string line16;
+		bool terse = false;
 		while (std::getline(in, line8)) {
 			while (!line8.empty() && std::isspace(line8[line8.size()-1])) {
 				line8.resize(line8.size()-1);
+			}
+			if (!line8.empty()) {
+				// Ignore Ispell stream commands
+				if (line8.find_first_of("*&@#~+-") == 0) {
+					continue;
+				}
+				// Enable terse mode
+				if (line8[0] == '!') {
+					terse = true;
+					continue;
+				}
+				// Disable terse mode
+				if (line8[0] == '%') {
+					terse = false;
+					continue;
+				}
+				// Strip possible meta character
+				if (line8[0] == '^') {
+					line8.erase(line8.begin());
+				}
 			}
 			if (line8.empty()) {
 				continue;
@@ -213,7 +234,9 @@ public:
 				}
 
 				if (is_correct(line16)) {
-					out << "*" << std::endl;
+					if (!terse) {
+						out << "*" << std::endl;
+					}
 					continue;
 				}
 
@@ -249,8 +272,11 @@ protected:
 	template<typename T>
 	struct hash_any_string {
 		size_t operator()(const T& str) const {
-			std::wstring wstr(str.begin(), str.end());
-			return std::hash<std::wstring>()(wstr);
+			size_t rv = 104729;
+			for (const auto& c : str) {
+				rv ^= std::hash<wchar_t>()(c) + 0x9e3779b9 + (rv << 6) + (rv >> 2);
+			}
+			return rv;
 		}
 	};
 

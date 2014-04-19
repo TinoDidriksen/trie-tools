@@ -169,30 +169,32 @@ private:
 		}
 
 		bool add(root_type& root, const String& entry, size_t pos=0) {
-			++num_terminals;
+			bool rv = false;
 			children_depth = std::max(children_depth, static_cast<Count>(entry.size() - pos));
 			if (pos < entry.size()) {
 				typename children_type::iterator child = findchild(children, entry[pos]);
 				if (child != children.end()) {
 					node_type& node = root.nodes[child->second];
-					return node.add(root, entry, pos+1);
+					rv = node.add(root, entry, pos+1);
 				}
 				else {
 					Count z = static_cast<Count>(root.nodes.size());
 					insertchild(children, std::make_pair(entry[pos], z));
 					root.nodes.resize(z+1);
 					root.nodes.back() = node_type(entry[pos]);
-					root.nodes.back().add(root, entry, pos+1);
-					return true;
+					rv = root.nodes.back().add(root, entry, pos+1);
 				}
 			}
 			else {
 				if (!terminal) {
 					terminal = true;
-					return true;
+					rv = true;
 				}
 			}
-			return false;
+			if (rv) {
+				++num_terminals;
+			}
+			return rv;
 		}
 
 		void query(const root_type& root, const String& entry, size_t pos, query_type& collected, query_path_type& qp, size_t maxdist=0, size_t curdist=0) const {
@@ -614,6 +616,7 @@ public:
 	}
 
 	void compress() {
+		// ToDo: Add compression ratio to bail out early
 		if (compressed) {
 			return;
 		}

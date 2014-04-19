@@ -5,7 +5,7 @@ if(NOT MSVC)
 	set(POPEN_PLUS_C ../posix/popen_plus.c ../posix/popen_plus.h)
 endif()
 
-if(NOT CMAKE_BUILD_TYPE STREQUAL Debug)
+if(NOT CMAKE_BUILD_TYPE STREQUAL Debug AND OPT_TCMALLOC)
 	find_library(GOOGLE_TCMALLOC_LIB tcmalloc)
 	if(GOOGLE_TCMALLOC_LIB)
 		message(STATUS "Found tcmalloc: ${GOOGLE_TCMALLOC_LIB}")
