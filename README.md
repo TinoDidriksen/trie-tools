@@ -20,7 +20,7 @@
 An empty input line results in the trie roots being output.
 
 ## Spell checking
-`trie-spell <trie-file>` which is an Ispell compatible spell checker that takes UTF-8 input from `stdin` and outputs to `stdout`. The results will be within a Levenshtein distance of `max(1,log10(word.length))`.
+`trie-spell <trie-file>` which is an Ispell compatible spell checker that takes UTF-8 input from `stdin` and outputs to `stdout`. The results will be within a Levenshtein distance of `max(1,log2(word.length))`.
 
 ## Tokenizing
 `trie-tokenize [trie-file] [in-file]` which uses a trie to find best-fit tokenizations of a given stream of untokenized text, where
