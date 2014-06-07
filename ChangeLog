@@ -1,3 +1,19 @@
+2014-04-20  tino
+
+	* [r9866] README.md, cmake.sh: cmake.sh converts --prefix
+
+2014-04-19  tino
+
+	* [r9865] CMakeLists.txt, COPYING, README.md, include/tdc_trie.hpp,
+	  include/tdc_trie_speller.hpp, src/CMakeLists.txt,
+	  src/trie-spell-foma.cpp, src/trie-spell.cpp: ISpell; Readme;
+	  Disable TCMalloc on OS X; Cheaper hash_any_string
+
+2014-01-30  tino
+
+	* [r9688] ChangeLog, include/tdc_trie.hpp, src/trie-browse.cpp:
+	  Added daemon mode to trie-browse
+
 2014-01-29  tino
 
 	* [r9687] src/trie-browse.cpp, src/trie-build.cpp,

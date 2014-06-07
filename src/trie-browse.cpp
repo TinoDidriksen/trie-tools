@@ -167,6 +167,16 @@ int main(int argc, char *argv[]) {
 
 		in->clear();
 		out->clear();
-		trie_browse(trie, *in, *out);
+		try {
+			trie_browse(trie, *in, *out);
+		}
+		catch (std::exception& e) {
+			std::cerr << "Exception caught: " << e.what() << std::endl;
+			(*out) << "{}" << std::endl;
+		}
+		catch (...) {
+			std::cerr << "Unknown exception caught on line " << __LINE__ << std::endl;
+			(*out) << "{}" << std::endl;
+		}
 	} while (daemon);
 }
