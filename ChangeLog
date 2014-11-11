@@ -1,3 +1,10 @@
+2014-06-07  tino
+
+	* [r9979] CMake, CMakeLists.txt: Delete PPA stuff since we have
+	  better packaging
+	* [r9973] ChangeLog, include/tdc_trie.hpp, src/trie-browse.cpp:
+	  Catch and ignore browsing exceptions
+
 2014-04-20  tino
 
 	* [r9866] README.md, cmake.sh: cmake.sh converts --prefix

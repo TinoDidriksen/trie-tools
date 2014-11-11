@@ -44,7 +44,7 @@ const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didrikse
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 1;
-const uint32_t TRIE_REVISION = 9973;
+const uint32_t TRIE_REVISION = 10270;
 const uint32_t TRIE_SERIALIZED_REVISION = 9655;
 
 typedef std::basic_string<uint8_t> u8string;
@@ -169,6 +169,7 @@ private:
 		}
 
 		bool add(root_type& root, const String& entry, size_t pos=0) {
+			size_t self = this - &root.nodes.front();
 			bool rv = false;
 			children_depth = std::max(children_depth, static_cast<Count>(entry.size() - pos));
 			if (pos < entry.size()) {
@@ -192,7 +193,7 @@ private:
 				}
 			}
 			if (rv) {
-				++num_terminals;
+				++root.nodes[self].num_terminals;
 			}
 			return rv;
 		}
