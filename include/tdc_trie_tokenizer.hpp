@@ -167,12 +167,12 @@ namespace tdc {
 			while (std::getline(in, line8)) {
 				// First, trim the UTF-8 since that will catch 99% of whitespace
 				// Trim trailing whitespace
-				while (!line8.empty() && std::isspace(line8.back())) {
+				while (!line8.empty() && tdc::isspace(line8.back())) {
 					line8.resize(line8.size() - 1);
 				}
 				// Trim leading whitespace
 				for (size_t i = 0; i < line8.size(); ++i) {
-					if (!std::isspace(line8[i])) {
+					if (!tdc::isspace(line8[i])) {
 						line8.erase(line8.begin(), line8.begin() + i); // becomes a no-op for i=0
 						break;
 					}

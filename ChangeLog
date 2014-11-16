@@ -1,3 +1,8 @@
+2014-11-11  tino
+
+	* [r10270] ChangeLog, include/tdc_trie.hpp: this has gone away, so
+	  remember who we were
+
 2014-06-07  tino
 
 	* [r9979] CMake, CMakeLists.txt: Delete PPA stuff since we have

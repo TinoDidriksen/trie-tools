@@ -33,7 +33,7 @@ void build_trie(trie_t& trie, std::istream& input) {
 	tdc::u16string line16;
 	size_t i=0;
 	for ( ; std::getline(input, line8) ; ++i) {
-		while (!line8.empty() && std::isspace(line8[line8.size()-1])) {
+		while (!line8.empty() && tdc::isspace(line8[line8.size()-1])) {
 			line8.resize(line8.size()-1);
 		}
 		if (line8.empty() || line8[0] == '#') {

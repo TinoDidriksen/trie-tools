@@ -189,9 +189,10 @@ public:
 		tdc::u16string line16;
 		bool terse = false;
 		while (std::getline(in, line8)) {
-			while (!line8.empty() && std::isspace(line8[line8.size()-1])) {
+			while (!line8.empty() && tdc::isspace(line8[line8.size()-1])) {
 				line8.resize(line8.size()-1);
 			}
+			/*
 			if (!line8.empty()) {
 				// Ignore Ispell stream commands
 				if (line8.find_first_of("*&@#~+-") == 0) {
@@ -212,6 +213,7 @@ public:
 					line8.erase(line8.begin());
 				}
 			}
+			//*/
 			if (line8.empty()) {
 				continue;
 			}

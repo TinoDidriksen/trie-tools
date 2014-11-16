@@ -44,12 +44,16 @@ const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didrikse
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 1;
-const uint32_t TRIE_REVISION = 10270;
+const uint32_t TRIE_REVISION = 10273;
 const uint32_t TRIE_SERIALIZED_REVISION = 9655;
 
 typedef std::basic_string<uint8_t> u8string;
 typedef std::basic_string<uint16_t> u16string;
 typedef std::basic_string<uint32_t> u32string;
+
+inline bool isspace(char c) {
+	return (c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D);
+}
 
 template<typename T>
 struct trie_serializer {
