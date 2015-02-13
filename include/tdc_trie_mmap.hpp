@@ -43,8 +43,8 @@ namespace tdc {
 namespace bi = ::boost::interprocess;
 
 template<typename NS, typename T, typename Y>
-inline typename T findchild(const NS& nodes, const T& t, size_t n, const Y& y) {
-	typename T it, first = t;
+inline T findchild(const NS& nodes, const T& t, size_t n, const Y& y) {
+	T it, first = t;
 	size_t count = n, step;
 
 	while (count > 0) {
@@ -84,7 +84,7 @@ private:
 		}
 
 		typename String::value_type self() const {
-			return *reinterpret_cast<typename const String::value_type*>(p);
+			return *reinterpret_cast<const String::value_type*>(p);
 			/*/
 			typename String::value_type vt = 0;
 			memcpy(&vt, p, sizeof(vt));
@@ -115,36 +115,6 @@ private:
 
 		trie_node(const char *p) : p(p)
 		{
-		}
-
-		bool add(root_type& root, const String& entry, size_t pos=0) {
-			size_t self = this - &root.nodes.front();
-			bool rv = false;
-			children_depth = std::max(children_depth, static_cast<Count>(entry.size() - pos));
-			if (pos < entry.size()) {
-				typename children_type::iterator child = findchild(children, entry[pos]);
-				if (child != children.end()) {
-					node_type& node = root.nodes[*child];
-					rv = node.add(root, entry, pos+1);
-				}
-				else {
-					Count z = static_cast<Count>(root.nodes.size());
-					insertchild(children, std::make_pair(entry[pos], z));
-					root.nodes.resize(z+1);
-					root.nodes.back() = node_type(entry[pos]);
-					rv = root.nodes.back().add(root, entry, pos+1);
-				}
-			}
-			else {
-				if (!terminal) {
-					terminal = true;
-					rv = true;
-				}
-			}
-			if (rv) {
-				++root.nodes[self].num_terminals;
-			}
-			return rv;
 		}
 
 		void query(const root_type& root, const String& entry, size_t pos, query_type& collected, query_path_type& qp, size_t maxdist=0, size_t curdist=0) const {
