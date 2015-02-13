@@ -1,6 +1,21 @@
 # Threading, for popen_plus
 find_package(Threads REQUIRED)
 
+# Boost
+find_path(Boost_LOCAL NAMES boost/config.hpp PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../include" NO_DEFAULT_PATH)
+if(Boost_LOCAL)
+	set(BOOST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+	find_package(Boost 1.48.0)
+endif()
+if(NOT Boost_FOUND)
+	unset(BOOST_ROOT)
+	message(STATUS "Did not find Boost locally; trying globally...")
+	message(STATUS "If this doesn't work, run ./get-boost.sh and try again.")
+	find_package(Boost 1.48.0 REQUIRED)
+endif()
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
+
 if(NOT MSVC)
 	set(POPEN_PLUS_C ../posix/popen_plus.c ../posix/popen_plus.h)
 endif()
@@ -25,13 +40,14 @@ endmacro()
 
 set(UTF8 ../include/utf8.h)
 set(TRIE ../include/tdc_trie.hpp)
+set(TRIE_MMAP ${TRIE} ../include/tdc_trie_mmap.hpp)
 set(TRIE_SPELL ../include/tdc_trie_speller.hpp)
 set(TRIE_TOKENIZE ../include/tdc_trie_tokenizer.hpp)
 
 add_executable(trie-build trie-build.cpp ${UTF8} ${TRIE})
 link_helper(trie-build)
 
-add_executable(trie-print trie-print.cpp ${UTF8} ${TRIE})
+add_executable(trie-print trie-print.cpp ${UTF8} ${TRIE_MMAP})
 link_helper(trie-print)
 
 add_executable(trie-browse trie-browse.cpp ${UTF8} ${TRIE})

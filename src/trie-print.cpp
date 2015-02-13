@@ -18,14 +18,14 @@
 * along with trie-tools.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <tdc_trie.hpp>
+#include <tdc_trie_mmap.hpp>
 #include <utf8.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
 
-typedef tdc::trie<tdc::u16string> trie_t;
+typedef tdc::trie_mmap<tdc::u16string> trie_t;
 
 void trie_print(const trie_t& trie, std::ostream& out) {
 	size_t i = 0;
@@ -47,15 +47,7 @@ int main(int argc, char *argv[]) {
 	std::cin.sync_with_stdio(false);
 	std::cout.sync_with_stdio(false);
 
-	trie_t trie;
-
-	if (args.size() > 1 && args[1] != "-") {
-		std::ifstream in(args[1].c_str(), std::ios::binary);
-		trie.unserialize(in);
-	}
-	else {
-		trie.unserialize(std::cin);
-	}
+	trie_t trie(args[1].c_str());
 
 	if (args.size() > 2 && args[2] != "-") {
 		std::ofstream out(args[2].c_str(), std::ios::binary);
