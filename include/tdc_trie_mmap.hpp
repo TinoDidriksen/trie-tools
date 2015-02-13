@@ -124,7 +124,7 @@ private:
 			if (pos < entry.size()) {
 				typename children_type::iterator child = findchild(children, entry[pos]);
 				if (child != children.end()) {
-					node_type& node = root.nodes[child->second];
+					node_type& node = root.nodes[*child];
 					rv = node.add(root, entry, pos+1);
 				}
 				else {
@@ -150,28 +150,31 @@ private:
 		void query(const root_type& root, const String& entry, size_t pos, query_type& collected, query_path_type& qp, size_t maxdist=0, size_t curdist=0) const {
 			qp.push_back(this);
 
+			BOOST_AUTO(cs, children());
+			BOOST_AUTO(cn, num_children());
+
 			if (pos < entry.size()) {
-				typename children_type::const_iterator child = findchild(children, entry[pos]);
-				if (child != children.end()) {
-					root.nodes[child->second].query(root, entry, pos+1, collected, qp, maxdist, curdist);
+				typename children_type child = findchild(root.nodes, cs, cn, entry[pos]);
+				if (child != cs + cn) {
+					root.nodes[*child].query(root, entry, pos+1, collected, qp, maxdist, curdist);
 				}
 			}
 
 			if (curdist < maxdist) {
-				for (typename children_type::const_iterator child = children.begin() ; child != children.end() ; ++child) {
-					if (pos >= entry.size() || child->first != entry[pos]) {
-						root.nodes[child->second].query(root, entry, pos, collected, qp, maxdist, curdist+1);
-						root.nodes[child->second].query(root, entry, pos+1, collected, qp, maxdist, curdist+1);
+				for (typename children_type child = cs ; child != cs + cn ; ++child) {
+					if (pos >= entry.size() || root.nodes[*child].self() != entry[pos]) {
+						root.nodes[*child].query(root, entry, pos, collected, qp, maxdist, curdist+1);
+						root.nodes[*child].query(root, entry, pos+1, collected, qp, maxdist, curdist+1);
 					}
 					for (size_t i = 1 ; pos+i < entry.size() ; ++i) {
-						if (child->first == entry[pos+i]) {
-							root.nodes[child->second].query(root, entry, pos+i+1, collected, qp, maxdist, curdist+i);
+						if (root.nodes[*child].self() == entry[pos + i]) {
+							root.nodes[*child].query(root, entry, pos+i+1, collected, qp, maxdist, curdist+i);
 						}
 					}
 				}
 			}
 
-			if (terminal) {
+			if (terminal()) {
 				size_t dist = curdist;
 				if (pos < entry.size()) {
 					dist += entry.size() - pos;
@@ -346,12 +349,12 @@ public:
 			}
 
 			browser_out values() const {
-				return browser_out(owner, owner->nodes[node].children[which].second);
+				return browser_out(owner, *(owner->nodes[node].children() + which));
 			}
 
 			std::pair<typename String::value_type, Count> operator*() const {
-				const typename trie_node::children_type& children = owner->nodes[node].children;
-				return std::make_pair(children[which].first, owner->nodes[children[which].second].num_terminals);
+				const typename trie_node::children_type& children = owner->nodes[node].children();
+				return std::make_pair(owner->nodes[children[which]].self(), owner->nodes[children[which]].num_terminals());
 			}
 
 			bool operator==(const browser_iter& o) {
@@ -378,7 +381,7 @@ public:
 		}
 
 		browser_iter end() const {
-			return browser_iter(owner, node, owner->nodes[node].children.size());
+			return browser_iter(owner, node, owner->nodes[node].num_children());
 		}
 	};
 
@@ -464,21 +467,25 @@ public:
 
 	const_iterator find(const String& entry) const {
 		const_iterator rv = end();
-		typename node_type::children_type::const_iterator child = findchild(nodes[0].children, entry[0]);
-		if (child != nodes[0].children.end()) {
+		BOOST_AUTO(cs, nodes[0].children());
+		BOOST_AUTO(cn, nodes[0].num_children());
+		typename node_type::children_type child = findchild(nodes, cs, cn, entry[0]);
+		if (child != cs + cn) {
 			rv.path.clear();
 			rv.path.push_back(0);
-			rv.path.push_back(child->second);
+			rv.path.push_back(*child);
 			for (size_t i=1 ; i<entry.size() ; ++i) {
-				Count second = child->second;
-				child = findchild(nodes[second].children, entry[i]);
-				if (child == nodes[second].children.end()) {
+				Count second = *child;
+				BOOST_AUTO(cs, nodes[second].children());
+				BOOST_AUTO(cn, nodes[second].num_children());
+				child = findchild(nodes, cs, cn, entry[i]);
+				if (child == cs + cn) {
 					rv = end();
 					break;
 				}
-				rv.path.push_back(child->second);
+				rv.path.push_back(*child);
 			}
-			if (!rv.path.empty() && nodes[rv.path.back()].terminal == false) {
+			if (!rv.path.empty() && nodes[rv.path.back()].terminal() == false) {
 				rv = end();
 			}
 		}
@@ -488,10 +495,12 @@ public:
 	traverse_type traverse(typename String::value_type c, size_t n=npos) const {
 		traverse_type rv(npos, false);
 
-		typename node_type::children_type::const_iterator child = findchild(nodes[n].children, c);
-		if (child != nodes[n].children.end()) {
-			rv.first = child->second;
-			rv.second = nodes[rv.first].terminal;
+		BOOST_AUTO(cs, nodes[n].children());
+		BOOST_AUTO(cn, nodes[n].num_children());
+		typename node_type::children_type child = findchild(nodes, cs, cn, c);
+		if (child != cs + cn) {
+			rv.first = *child;
+			rv.second = nodes[rv.first].terminal();
 		}
 
 		return rv;

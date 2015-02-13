@@ -1,6 +1,5 @@
 /*
-* Copyright (C) 2014, Tino Didriksen Consult
-* Developed by Tino Didriksen <consult@tinodidriksen.com>
+* Copyright (C) 2013-2015, Tino Didriksen <mail@tinodidriksen.com>
 *
 * This file is part of trie-tools
 *
@@ -18,7 +17,7 @@
 * along with trie-tools.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <tdc_trie.hpp>
+#include <tdc_trie_mmap.hpp>
 #include <utf8.h>
 #include <iostream>
 #include <fstream>
@@ -26,7 +25,7 @@
 #include <string>
 #include <memory>
 
-typedef tdc::trie<tdc::u16string> trie_t;
+typedef tdc::trie_mmap<tdc::u16string> trie_t;
 
 inline void appendJSON(std::string& str, char chr) {
 	if (chr == '\n') {
@@ -144,11 +143,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	trie_t trie;
-	{
-		std::ifstream in_trie(args[1], std::ios::binary);
-		trie.unserialize(in_trie);
-	}
+	trie_t trie(args[1].c_str());
 
 	do {
 		std::unique_ptr<std::ifstream> in_p;

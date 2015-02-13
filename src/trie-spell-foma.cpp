@@ -1,6 +1,5 @@
 /*
-* Copyright (C) 2013, Tino Didriksen Consult
-* Developed by Tino Didriksen <consult@tinodidriksen.com>
+* Copyright (C) 2013-2015, Tino Didriksen <mail@tinodidriksen.com>
 *
 * This file is part of trie-tools
 *
@@ -204,7 +203,7 @@ public:
 
 		bool working = false;
 		size_t i = 0;
-		for (dict_t::const_iterator it = dicts[0].begin() ; it != dicts[0].end() ; ++it) {
+		for (trie_mmap_t::const_iterator it = trie.begin(); it != trie.end(); ++it) {
 			if (is_correct_word(*it)) {
 				working = true;
 				break;

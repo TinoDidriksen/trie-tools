@@ -50,19 +50,19 @@ link_helper(trie-build)
 add_executable(trie-print trie-print.cpp ${UTF8} ${TRIE_MMAP})
 link_helper(trie-print)
 
-add_executable(trie-browse trie-browse.cpp ${UTF8} ${TRIE})
+add_executable(trie-browse trie-browse.cpp ${UTF8} ${TRIE_MMAP})
 link_helper(trie-browse)
 
-add_executable(trie-tokenize trie-tokenize.cpp ${UTF8} ${TRIE} ${TRIE_TOKENIZE})
+add_executable(trie-tokenize trie-tokenize.cpp ${UTF8} ${TRIE_MMAP} ${TRIE_TOKENIZE})
 link_helper(trie-tokenize)
 
-add_executable(trie-tokenize-apertium trie-tokenize-apertium.cpp ${UTF8} ${TRIE} ${TRIE_TOKENIZE})
+add_executable(trie-tokenize-apertium trie-tokenize-apertium.cpp ${UTF8} ${TRIE_MMAP} ${TRIE_TOKENIZE})
 link_helper(trie-tokenize-apertium)
 
-add_executable(trie-spell trie-spell.cpp ${UTF8} ${TRIE} ${TRIE_SPELL})
+add_executable(trie-spell trie-spell.cpp ${UTF8} ${TRIE_MMAP} ${TRIE_SPELL})
 link_helper(trie-spell)
 
-add_executable(trie-spell-foma trie-spell-foma.cpp ${UTF8} ${TRIE} ${TRIE_SPELL} ${POPEN_PLUS_C})
+add_executable(trie-spell-foma trie-spell-foma.cpp ${UTF8} ${TRIE_MMAP} ${TRIE_SPELL} ${POPEN_PLUS_C})
 link_helper(trie-spell-foma)
 
 install(TARGETS

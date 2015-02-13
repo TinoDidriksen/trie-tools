@@ -1,6 +1,5 @@
 /*
-* Copyright (C) 2013, Tino Didriksen Consult
-* Developed by Tino Didriksen <consult@tinodidriksen.com>
+* Copyright (C) 2013-2015, Tino Didriksen <mail@tinodidriksen.com>
 *
 * This file is part of trie-tools
 *

@@ -1,6 +1,5 @@
 /*
-* Copyright (C) 2013, Tino Didriksen Consult
-* Developed by Tino Didriksen <consult@tinodidriksen.com>
+* Copyright (C) 2013-2015, Tino Didriksen <mail@tinodidriksen.com>
 *
 * This file is part of trie-tools
 *
@@ -21,22 +20,14 @@
 #include <tdc_trie_tokenizer.hpp>
 #include <iostream>
 
-typedef tdc::trie<tdc::u16string> trie_t;
+typedef tdc::trie_mmap<tdc::u16string> trie_t;
 
 int main(int argc, char *argv[]) {
 	std::vector<std::string> args(argv, argv + argc);
 	std::cin.sync_with_stdio(false);
 	std::cout.sync_with_stdio(false);
 
-	trie_t trie;
-
-	if (args.size() > 1 && args[1] != "-") {
-		std::ifstream in(args[1].c_str(), std::ios::binary);
-		trie.unserialize(in);
-	}
-	else {
-		trie.unserialize(std::cin);
-	}
+	trie_t trie(args[1].c_str());
 
 	tdc::trie_tokenizer<> tokenizer(trie);
 

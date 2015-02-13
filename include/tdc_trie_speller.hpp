@@ -1,6 +1,5 @@
 /*
-* Copyright (C) 2013, Tino Didriksen Consult
-* Developed by Tino Didriksen <consult@tinodidriksen.com>
+* Copyright (C) 2013-2015, Tino Didriksen <mail@tinodidriksen.com>
 *
 * This file is part of trie-tools
 *
@@ -22,7 +21,7 @@
 #ifndef TDC_TRIE_SPELLER_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 #define TDC_TRIE_SPELLER_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 
-#include <tdc_trie.hpp>
+#include <tdc_trie_mmap.hpp>
 #include <utf8.h>
 #include <fstream>
 #include <unordered_map>
@@ -36,23 +35,17 @@ template<typename String=u16string>
 class trie_speller {
 public:
 	trie_speller(const std::string& dict) :
-	dicts(2),
+	trie(dict.c_str()),
 	words(8),
 	cw(0)
 	{
-		std::ifstream dictf(dict.c_str(), std::ios::binary);
-		if (!dictf) {
-			std::cerr << "Could not open trie " << dict << " for reading!" << std::endl;
-			throw -1;
-		}
-		dicts[0].unserialize(dictf);
 	}
 
 	virtual ~trie_speller() {
 	}
 
 	virtual bool is_correct_word(const String& word) {
-		return (dicts[0].find(word) != dicts[0].end());
+		return (trie.find(word) != trie.end());
 	}
 
 	virtual bool is_correct(const String& word) {
@@ -129,12 +122,12 @@ public:
 					}
 
 					if (it->second) {
-						dicts[1].add(words[i].u16buffer);
-						dicts[1].add(u16buffer);
+						seen.add(words[i].u16buffer);
+						seen.add(u16buffer);
 					}
 				}
 				else {
-					dicts[1].add(words[i].u16buffer);
+					seen.add(words[i].u16buffer);
 				}
 			}
 
@@ -151,10 +144,10 @@ public:
 
 		if (is_correct(word) != true) {
 			size_t dist = std::max(static_cast<size_t>(1), static_cast<size_t>(std::log(words[cw - 1].u16buffer.size()) / std::log(2)));
-			typename dict_t::query_type qps[] = { dicts[0].query(words[cw - 1].u16buffer, dist), dicts[1].query(words[cw - 1].u16buffer, dist) };
+			typename trie_mmap_t::query_type qps[] = { trie.query(words[cw - 1].u16buffer, dist), seen.query(words[cw - 1].u16buffer, dist) };
 			for (size_t i=1 ; i<3 ; ++i) {
 				for (size_t qi = 0; qi < 2; ++qi) {
-					for (typename dict_t::query_type::iterator it = qps[qi].begin(); it != qps[qi].end(); ++it) {
+					for (typename trie_mmap_t::query_type::iterator it = qps[qi].begin(); it != qps[qi].end(); ++it) {
 						if (it->first == words[cw - 1].u16buffer) {
 							alts.clear();
 							goto find_alternatives_end;
@@ -268,8 +261,10 @@ public:
 	}
 
 protected:
-	typedef tdc::trie<String> dict_t;
-	std::vector<dict_t> dicts;
+	typedef tdc::trie_mmap<String> trie_mmap_t;
+	typedef tdc::trie<String> trie_t;
+	trie_mmap_t trie;
+	trie_t seen;
 
 	template<typename T>
 	struct hash_any_string {
