@@ -84,7 +84,7 @@ private:
 		}
 
 		typename String::value_type self() const {
-			return *reinterpret_cast<const String::value_type*>(p);
+			return *reinterpret_cast<const typename String::value_type*>(p);
 			/*/
 			typename String::value_type vt = 0;
 			memcpy(&vt, p, sizeof(vt));
@@ -124,14 +124,14 @@ private:
 			BOOST_AUTO(cn, num_children());
 
 			if (pos < entry.size()) {
-				typename children_type child = findchild(root.nodes, cs, cn, entry[pos]);
+				children_type child = findchild(root.nodes, cs, cn, entry[pos]);
 				if (child != cs + cn) {
 					root.nodes[*child].query(root, entry, pos+1, collected, qp, maxdist, curdist);
 				}
 			}
 
 			if (curdist < maxdist) {
-				for (typename children_type child = cs ; child != cs + cn ; ++child) {
+				for (children_type child = cs ; child != cs + cn ; ++child) {
 					if (pos >= entry.size() || root.nodes[*child].self() != entry[pos]) {
 						root.nodes[*child].query(root, entry, pos, collected, qp, maxdist, curdist+1);
 						root.nodes[*child].query(root, entry, pos+1, collected, qp, maxdist, curdist+1);
@@ -162,40 +162,12 @@ private:
 
 			qp.pop_back();
 		}
-
-	private:
-		bool equals(const root_type& root, const node_type* second) const {
-			if (self != second->self) {
-				return false;
-			}
-			if (num_terminals != second->num_terminals) {
-				return false;
-			}
-			if (children_depth != second->children_depth) {
-				return false;
-			}
-			if (terminal != second->terminal) {
-				return false;
-			}
-			if (children.size() != second->children.size()) {
-				return false;
-			}
-			for (typename children_type::const_iterator mine = children.begin(), other = second->children.begin()
-				; mine != children.end() && other != second->children.end() ; ++mine, ++other) {
-				const node_type *nmine = &root.nodes[mine->second];
-				const node_type *nother = &root.nodes[other->second];
-				if (!nmine->equals(root, nother)) {
-					return false;
-				}
-			}
-			return true;
-		}
 	};
 
 	friend class trie_node;
 
 	typedef trie_node node_type;
-	typedef std::vector<const node_type> node_container_type;
+	typedef std::vector<node_type> node_container_type;
 	typedef std::vector<const node_type*> query_path_type;
 
 	node_container_type nodes;
