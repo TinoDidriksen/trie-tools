@@ -42,8 +42,8 @@ namespace tdc {
 const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didriksen. Licensed under GPLv3+";
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
-const uint32_t TRIE_VERSION_PATCH = 1;
-const uint32_t TRIE_REVISION = 10273;
+const uint32_t TRIE_VERSION_PATCH = 2;
+const uint32_t TRIE_REVISION = 10489;
 const uint32_t TRIE_SERIALIZED_REVISION = 9655;
 
 typedef std::basic_string<uint8_t> u8string;

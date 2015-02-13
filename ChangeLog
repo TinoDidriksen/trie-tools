@@ -1,3 +1,23 @@
+2015-02-13  tino
+
+	* [r10488] include/tdc_trie_mmap.hpp: Remove unused code
+	* [r10487] include/tdc_trie_mmap.hpp: More mmap
+	* [r10486] include/tdc_trie.hpp, include/tdc_trie_mmap.hpp,
+	  include/tdc_trie_speller.hpp, include/tdc_trie_tokenizer.hpp,
+	  src/CMakeLists.txt, src/trie-browse.cpp, src/trie-build.cpp,
+	  src/trie-print.cpp, src/trie-spell-foma.cpp, src/trie-spell.cpp,
+	  src/trie-tokenize-apertium.cpp, src/trie-tokenize.cpp: More mmap
+	  fun
+	* [r10484] include/tdc_trie_mmap.hpp, src/CMakeLists.txt,
+	  src/trie-print.cpp: mmap'ed WIP
+
+2014-11-16  tino
+
+	* [r10273] ChangeLog, include/tdc_trie.hpp,
+	  include/tdc_trie_speller.hpp, include/tdc_trie_tokenizer.hpp,
+	  src/trie-build.cpp: Disable ispell/aspell stream commands; Use
+	  custom isspace() 'cause Windows
+
 2014-11-11  tino
 
 	* [r10270] ChangeLog, include/tdc_trie.hpp: this has gone away, so
