@@ -39,7 +39,7 @@ References:
 
 namespace tdc {
 
-const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2014 Tino Didriksen. Licensed under GPLv3+";
+const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2015 Tino Didriksen <mail@tinodidriksen.com>. Licensed under GPLv3+";
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 2;
