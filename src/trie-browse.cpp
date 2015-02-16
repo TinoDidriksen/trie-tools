@@ -25,7 +25,7 @@
 #include <string>
 #include <memory>
 
-typedef tdc::trie_mmap<tdc::u16string> trie_t;
+typedef tdc::trie_mmap<> trie_t;
 
 inline void appendJSON(std::string& str, char chr) {
 	if (chr == '\n') {

@@ -1,5 +1,8 @@
 2015-02-13  tino
 
+	* [r10490] include/tdc_trie.hpp: Update copyright
+	* [r10489] ChangeLog, include/tdc_trie.hpp: Now uses memory mapped
+	  files for all lookup tools
 	* [r10488] include/tdc_trie_mmap.hpp: Remove unused code
 	* [r10487] include/tdc_trie_mmap.hpp: More mmap
 	* [r10486] include/tdc_trie.hpp, include/tdc_trie_mmap.hpp,

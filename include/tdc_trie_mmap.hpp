@@ -43,7 +43,7 @@ namespace tdc {
 namespace bi = ::boost::interprocess;
 
 template<typename NS, typename T, typename Y>
-inline T findchild(const NS& nodes, const T& t, size_t n, const Y& y) {
+inline T findchild(const char *p, const NS& nodes, const T& t, size_t n, const Y& y) {
 	T it, first = t;
 	size_t count = n, step;
 
@@ -51,7 +51,7 @@ inline T findchild(const NS& nodes, const T& t, size_t n, const Y& y) {
 		it = first;
 		step = count / 2;
 		it += step;
-		if (nodes[*it].self() < y) {
+		if (nodes[*it].self(p) < y) {
 			first = ++it;
 			count -= step + 1;
 		}
@@ -59,13 +59,13 @@ inline T findchild(const NS& nodes, const T& t, size_t n, const Y& y) {
 			count = step;
 		}
 	}
-	if (first != t + n && nodes[*first].self() != y) {
+	if (first != t + n && nodes[*first].self(p) != y) {
 		first = t + n;
 	}
 	return first;
 }
 
-template<typename String, typename Count=uint32_t, typename Serializer=trie_serializer<typename String::value_type> >
+template<typename String=u16string, typename Count=uint32_t>
 class trie_mmap {
 private:
 
@@ -77,54 +77,46 @@ private:
 		typedef std::map<String,size_t> query_type;
 		typedef trie_mmap root_type;
 
-		const char *p;
+		Count n;
 
-		bool terminal() const {
-			return *(p + sizeof(typename String::value_type) + sizeof(Count)) != 0;
+		bool terminal(const char *p) const {
+			return *reinterpret_cast<const uint16_t*>(p + n + sizeof(uint16_t)) != 0;
 		}
 
-		typename String::value_type self() const {
-			return *reinterpret_cast<const typename String::value_type*>(p);
-			/*/
-			typename String::value_type vt = 0;
-			memcpy(&vt, p, sizeof(vt));
-			return vt;
-			//*/
+		typename String::value_type self(const char *p) const {
+			return *reinterpret_cast<const uint16_t*>(p + n);
 		}
 
-		Count num_terminals() const {
-			return *reinterpret_cast<const Count*>(p + sizeof(typename String::value_type));
+		Count num_terminals(const char *p) const {
+			return *reinterpret_cast<const Count*>(p + n + sizeof(uint16_t) + sizeof(uint16_t));
 		}
 
-		children_type children() const {
-			return reinterpret_cast<children_type>(p + sizeof(typename String::value_type) + sizeof(Count) + 1 + sizeof(Count));
+		children_type children(const char *p) const {
+			return reinterpret_cast<children_type>(p + n + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(Count) + sizeof(Count));
 		}
 
-		Count num_children() const {
-			return *reinterpret_cast<const Count*>(p + sizeof(typename String::value_type) + sizeof(Count) + 1);
+		Count num_children(const char *p) const {
+			return *reinterpret_cast<const Count*>(p + n + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(Count));
 		}
 
-		void buildString(const query_path_type& qp, String& in) const {
+		void buildString(const char *p, const query_path_type& qp, String& in) const {
 			in.reserve(qp.size());
 			for (typename query_path_type::const_iterator it = qp.begin() ; it != qp.end() ; ++it) {
-				in.push_back((*it)->self());
+				in.push_back((*it)->self(p));
 			}
 		}
 
 	public:
 
-		trie_node(const char *p) : p(p)
-		{
-		}
-
 		void query(const root_type& root, const String& entry, size_t pos, query_type& collected, query_path_type& qp, size_t maxdist=0, size_t curdist=0) const {
 			qp.push_back(this);
 
-			BOOST_AUTO(cs, children());
-			BOOST_AUTO(cn, num_children());
+			const char *p = const_char_p(root.mreg.get_address());
+			BOOST_AUTO(cs, children(p));
+			BOOST_AUTO(cn, num_children(p));
 
 			if (pos < entry.size()) {
-				children_type child = findchild(root.nodes, cs, cn, entry[pos]);
+				children_type child = findchild(p, root.nodes, cs, cn, entry[pos]);
 				if (child != cs + cn) {
 					root.nodes[*child].query(root, entry, pos+1, collected, qp, maxdist, curdist);
 				}
@@ -132,19 +124,19 @@ private:
 
 			if (curdist < maxdist) {
 				for (children_type child = cs ; child != cs + cn ; ++child) {
-					if (pos >= entry.size() || root.nodes[*child].self() != entry[pos]) {
+					if (pos >= entry.size() || root.nodes[*child].self(p) != entry[pos]) {
 						root.nodes[*child].query(root, entry, pos, collected, qp, maxdist, curdist+1);
 						root.nodes[*child].query(root, entry, pos+1, collected, qp, maxdist, curdist+1);
 					}
 					for (size_t i = 1 ; pos+i < entry.size() ; ++i) {
-						if (root.nodes[*child].self() == entry[pos + i]) {
+						if (root.nodes[*child].self(p) == entry[pos + i]) {
 							root.nodes[*child].query(root, entry, pos+i+1, collected, qp, maxdist, curdist+i);
 						}
 					}
 				}
 			}
 
-			if (terminal()) {
+			if (terminal(p)) {
 				size_t dist = curdist;
 				if (pos < entry.size()) {
 					dist += entry.size() - pos;
@@ -154,7 +146,7 @@ private:
 				}
 				if (dist <= maxdist) {
 					String out;
-					buildString(qp, out);
+					buildString(p, qp, out);
 					typename query_type::iterator ins = collected.insert(std::make_pair(out, dist)).first;
 					ins->second = std::min(ins->second, dist);
 				}
@@ -167,10 +159,10 @@ private:
 	friend class trie_node;
 
 	typedef trie_node node_type;
-	typedef std::vector<node_type> node_container_type;
 	typedef std::vector<const node_type*> query_path_type;
 
-	node_container_type nodes;
+	const node_type *nodes;
+	Count num_nodes;
 	bi::file_mapping fmap;
 	bi::mapped_region mreg;
 
@@ -191,13 +183,14 @@ public:
 		owner(owner),
 		path(1, n)
 		{
-			if (owner && n < owner->nodes.size() && !owner->nodes[n].terminal()) {
-				while (owner->nodes[n].num_children()) {
-					n = *owner->nodes[n].children();
+			const char *p = const_char_p(owner->mreg.get_address());
+			if (owner && n < owner->size() && !owner->nodes[n].terminal(p)) {
+				while (owner->nodes[n].num_children(p)) {
+					n = *owner->nodes[n].children(p);
 					path.push_back(n);
 				}
 			}
-			if (owner && n == owner->nodes.size()) {
+			if (owner && n == owner->size()) {
 				path.clear();
 			}
 		}
@@ -205,8 +198,9 @@ public:
 		String operator*() const {
 			String rv;
 			rv.reserve(path.size());
-			for (size_t i=1 ; i<path.size() ; ++i) {
-				rv += owner->nodes[path[i]].self();
+			const char *p = const_char_p(owner->mreg.get_address());
+			for (size_t i = 1; i<path.size(); ++i) {
+				rv += owner->nodes[path[i]].self(p);
 			}
 			return rv;
 		}
@@ -228,21 +222,22 @@ public:
 					break;
 				}
 
-				BOOST_AUTO(cs, owner->nodes[path.back()].children());
-				BOOST_AUTO(cn, owner->nodes[path.back()].num_children());
+				const char *p = const_char_p(owner->mreg.get_address());
+				BOOST_AUTO(cs, owner->nodes[path.back()].children(p));
+				BOOST_AUTO(cn, owner->nodes[path.back()].num_children(p));
 
-				typename trie_node::children_type child = findchild(owner->nodes, cs, cn, owner->nodes[old].self());
+				typename trie_node::children_type child = findchild(p, owner->nodes, cs, cn, owner->nodes[old].self(p));
 				++child;
 				if (child != cs + cn) {
 					Count n = *child;
 					path.push_back(n);
-					while (owner->nodes[n].num_children()) {
-						n = *owner->nodes[n].children();
+					while (owner->nodes[n].num_children(p)) {
+						n = *owner->nodes[n].children(p);
 						path.push_back(n);
 					}
 					goto plus_return;
 				}
-				if (owner->nodes[path.back()].terminal()) {
+				if (owner->nodes[path.back()].terminal(p)) {
 					break;
 				}
 			}
@@ -291,12 +286,14 @@ public:
 			}
 
 			browser_out values() const {
-				return browser_out(owner, *(owner->nodes[node].children() + which));
+				const char *p = const_char_p(owner->mreg.get_address());
+				return browser_out(owner, *(owner->nodes[node].children(p) + which));
 			}
 
 			std::pair<typename String::value_type, Count> operator*() const {
-				const typename trie_node::children_type& children = owner->nodes[node].children();
-				return std::make_pair(owner->nodes[children[which]].self(), owner->nodes[children[which]].num_terminals());
+				const char *p = const_char_p(owner->mreg.get_address());
+				const typename trie_node::children_type& children = owner->nodes[node].children(p);
+				return std::make_pair(owner->nodes[children[which]].self(p), owner->nodes[children[which]].num_terminals(p));
 			}
 
 			bool operator==(const browser_iter& o) {
@@ -323,7 +320,8 @@ public:
 		}
 
 		browser_iter end() const {
-			return browser_iter(owner, node, owner->nodes[node].num_children());
+			const char *p = const_char_p(owner->mreg.get_address());
+			return browser_iter(owner, node, owner->nodes[node].num_children(p));
 		}
 	};
 
@@ -357,7 +355,7 @@ public:
 		}
 		reg += sizeof(rev);
 
-		uint8_t s;
+		uint16_t s;
 		memcpy(&s, reg, sizeof(s));
 		if (s != sizeof(typename String::value_type)) {
 			char _msg[] = "Unserialize expected code unit width %u but data had width %u";
@@ -366,27 +364,25 @@ public:
 			throw std::runtime_error(msg);
 		}
 		reg += sizeof(s);
-		reg += 1; // Compressed flag
+		reg += sizeof(s); // Compressed flag
 
-		Count z;
-		memcpy(&z, reg, sizeof(z));
-		reg += sizeof(z);
-		nodes.reserve(z);
-		for (size_t n = 0; n < z; ++n) {
-			nodes.push_back(reg);
-			reg += sizeof(typename String::value_type); // self
+		memcpy(&num_nodes, reg, sizeof(num_nodes));
+		reg += sizeof(num_nodes);
+		for (size_t n = 0; n < num_nodes; ++n) {
+			reg += sizeof(s); // self
+			reg += sizeof(s); // terminal
 			reg += sizeof(Count); // num_terminals
-			reg += 1; // terminal
 
 			Count c;
 			memcpy(&c, reg, sizeof(c));
 			reg += sizeof(c);
 			reg += c*sizeof(Count); // children
 		}
+		nodes = reinterpret_cast<const node_type*>(reg);
 	}
 
 	size_t size() const {
-		return nodes.size();
+		return num_nodes;
 	}
 
 	const_iterator begin() const {
@@ -409,25 +405,26 @@ public:
 
 	const_iterator find(const String& entry) const {
 		const_iterator rv = end();
-		BOOST_AUTO(cs, nodes[0].children());
-		BOOST_AUTO(cn, nodes[0].num_children());
-		typename node_type::children_type child = findchild(nodes, cs, cn, entry[0]);
+		const char *p = const_char_p(mreg.get_address());
+		BOOST_AUTO(cs, nodes[0].children(p));
+		BOOST_AUTO(cn, nodes[0].num_children(p));
+		typename node_type::children_type child = findchild(p, nodes, cs, cn, entry[0]);
 		if (child != cs + cn) {
 			rv.path.clear();
 			rv.path.push_back(0);
 			rv.path.push_back(*child);
 			for (size_t i=1 ; i<entry.size() ; ++i) {
 				Count second = *child;
-				BOOST_AUTO(cs, nodes[second].children());
-				BOOST_AUTO(cn, nodes[second].num_children());
-				child = findchild(nodes, cs, cn, entry[i]);
+				BOOST_AUTO(cs, nodes[second].children(p));
+				BOOST_AUTO(cn, nodes[second].num_children(p));
+				child = findchild(p, nodes, cs, cn, entry[i]);
 				if (child == cs + cn) {
 					rv = end();
 					break;
 				}
 				rv.path.push_back(*child);
 			}
-			if (!rv.path.empty() && nodes[rv.path.back()].terminal() == false) {
+			if (!rv.path.empty() && nodes[rv.path.back()].terminal(p) == false) {
 				rv = end();
 			}
 		}
@@ -437,12 +434,14 @@ public:
 	traverse_type traverse(typename String::value_type c, size_t n=npos) const {
 		traverse_type rv(npos, false);
 
-		BOOST_AUTO(cs, nodes[n].children());
-		BOOST_AUTO(cn, nodes[n].num_children());
-		typename node_type::children_type child = findchild(nodes, cs, cn, c);
+		const char *p = const_char_p(mreg.get_address());
+		BOOST_AUTO(cs, nodes[n].children(p));
+		BOOST_AUTO(cn, nodes[n].num_children(p));
+
+		typename node_type::children_type child = findchild(p, nodes, cs, cn, c);
 		if (child != cs + cn) {
 			rv.first = *child;
-			rv.second = nodes[rv.first].terminal();
+			rv.second = nodes[rv.first].terminal(p);
 		}
 
 		return rv;

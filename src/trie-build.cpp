@@ -25,7 +25,7 @@
 #include <string>
 #include <cctype>
 
-typedef tdc::trie<tdc::u16string> trie_t;
+typedef tdc::trie<> trie_t;
 
 void build_trie(trie_t& trie, std::istream& input) {
 	std::string line8;

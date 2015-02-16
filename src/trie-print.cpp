@@ -24,7 +24,7 @@
 #include <vector>
 #include <string>
 
-typedef tdc::trie_mmap<tdc::u16string> trie_t;
+typedef tdc::trie_mmap<> trie_t;
 
 void trie_print(const trie_t& trie, std::ostream& out) {
 	size_t i = 0;

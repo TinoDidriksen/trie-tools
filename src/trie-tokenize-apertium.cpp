@@ -20,7 +20,7 @@
 #include <tdc_trie_tokenizer.hpp>
 #include <iostream>
 
-typedef tdc::trie_mmap<tdc::u16string> trie_t;
+typedef tdc::trie_mmap<> trie_t;
 
 class apertium_printer {
 private:

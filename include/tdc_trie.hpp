@@ -43,8 +43,8 @@ const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2015 Tino Didrikse
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 2;
-const uint32_t TRIE_REVISION = 10489;
-const uint32_t TRIE_SERIALIZED_REVISION = 9655;
+const uint32_t TRIE_REVISION = 10498;
+const uint32_t TRIE_SERIALIZED_REVISION = 10498;
 
 typedef std::basic_string<uint8_t> u8string;
 typedef std::basic_string<uint16_t> u16string;
@@ -55,17 +55,14 @@ inline bool isspace(char c) {
 }
 
 template<typename T>
-struct trie_serializer {
-	void serialize(std::ostream& out, const T& value) const {
-		out.write(reinterpret_cast<const char*>(&value), sizeof(T));
-	}
+inline const char *const_char_p(T t) {
+	return reinterpret_cast<const char*>(t);
+}
 
-	T unserialize(std::istream& in) const {
-		T value;
-		in.read(reinterpret_cast<char*>(&value), sizeof(T));
-		return value;
-	}
-};
+template<typename T>
+inline char *char_p(T t) {
+	return reinterpret_cast<char*>(t);
+}
 
 template<typename T, typename Y>
 inline typename T::iterator lower_bound(T& t, const Y& y) {
@@ -134,7 +131,7 @@ inline typename T::iterator insertchild(T& t, Y&& y) {
 	return t.insert(it, std::move(y));
 }
 
-template<typename String, typename Count=uint32_t, typename Serializer=trie_serializer<typename String::value_type> >
+template<typename String=u16string, typename Count=uint32_t>
 class trie {
 private:
 
@@ -279,7 +276,6 @@ private:
 	typedef std::vector<node_type> node_container_type;
 	typedef std::vector<const node_type*> query_path_type;
 
-	Serializer serializer;
 	bool compressed;
 	node_container_type nodes;
 
@@ -449,28 +445,35 @@ public:
 	}
 
 	void serialize(std::ostream& out) const {
+		std::vector<Count> ofs(nodes.size());
+
 		const char *trie = "TRIE";
 		out.write(trie, 4);
-		out.write(reinterpret_cast<const char*>(&TRIE_SERIALIZED_REVISION), sizeof(TRIE_SERIALIZED_REVISION));
+		out.write(const_char_p(&TRIE_SERIALIZED_REVISION), sizeof(TRIE_SERIALIZED_REVISION));
 
-		uint8_t z = sizeof(typename String::value_type);
-		out.write(reinterpret_cast<const char*>(&z), sizeof(z));
+		uint16_t z = sizeof(typename String::value_type);
+		out.write(const_char_p(&z), sizeof(z));
 
-		out.write(reinterpret_cast<const char*>(&compressed), sizeof(compressed));
+		z = compressed;
+		out.write(const_char_p(&z), sizeof(z));
 
 		Count value = static_cast<Count>(nodes.size());
-		out.write(reinterpret_cast<const char*>(&value), sizeof(value));
+		out.write(const_char_p(&value), sizeof(value));
 		for (size_t n = 0; n<nodes.size(); ++n) {
-			serializer.serialize(out, nodes[n].self);
-			out.write(reinterpret_cast<const char*>(&nodes[n].num_terminals), sizeof(nodes[n].num_terminals));
-			out.write(reinterpret_cast<const char*>(&nodes[n].terminal), sizeof(nodes[n].terminal));
+			ofs[n] = static_cast<Count>(out.tellp());
+			z = nodes[n].self;
+			out.write(const_char_p(&z), sizeof(z));
+			z = nodes[n].terminal;
+			out.write(const_char_p(&z), sizeof(z));
+			out.write(const_char_p(&nodes[n].num_terminals), sizeof(nodes[n].num_terminals));
 
 			Count value = static_cast<Count>(nodes[n].children.size());
-			out.write(reinterpret_cast<const char*>(&value), sizeof(value));
+			out.write(const_char_p(&value), sizeof(value));
 			for (size_t c = 0; c<nodes[n].children.size(); ++c) {
-				out.write(reinterpret_cast<const char*>(&nodes[n].children[c].second), sizeof(nodes[n].children[c].second));
+				out.write(const_char_p(&nodes[n].children[c].second), sizeof(nodes[n].children[c].second));
 			}
 		}
+		out.write(const_char_p(ofs.data()), ofs.size()*sizeof(Count));
 	}
 
 	void unserialize(std::istream& in) {
@@ -483,7 +486,7 @@ public:
 		}
 
 		uint32_t rev = 0;
-		in.read(reinterpret_cast<char*>(&rev), sizeof(rev));
+		in.read(char_p(&rev), sizeof(rev));
 		if (rev != TRIE_SERIALIZED_REVISION) {
 			char _msg[] = "Unserialize expected revision %u but data had revision %u";
 			std::string msg(sizeof(_msg)+11 + 11 + 1, 0);
@@ -491,8 +494,8 @@ public:
 			throw std::runtime_error(msg);
 		}
 
-		uint8_t s;
-		in.read(reinterpret_cast<char*>(&s), sizeof(s));
+		uint16_t s;
+		in.read(char_p(&s), sizeof(s));
 		if (s != sizeof(typename String::value_type)) {
 			char _msg[] = "Unserialize expected code unit width %u but data had width %u";
 			std::string msg(sizeof(_msg)+11 + 11 + 1, 0);
@@ -500,21 +503,24 @@ public:
 			throw std::runtime_error(msg);
 		}
 
-		in.read(reinterpret_cast<char*>(&compressed), sizeof(compressed));
+		in.read(char_p(&s), sizeof(s));
+		compressed = (s != 0);
 
 		Count z;
-		in.read(reinterpret_cast<char*>(&z), sizeof(z));
+		in.read(char_p(&z), sizeof(z));
 		nodes.resize(z);
 		for (size_t n = 0; n < z; ++n) {
-			nodes[n].self = serializer.unserialize(in);
-			in.read(reinterpret_cast<char*>(&nodes[n].num_terminals), sizeof(nodes[n].num_terminals));
-			in.read(reinterpret_cast<char*>(&nodes[n].terminal), sizeof(nodes[n].terminal));
+			in.read(char_p(&s), sizeof(s));
+			nodes[n].self = static_cast<typename String::value_type>(s);
+			in.read(char_p(&s), sizeof(s));
+			nodes[n].terminal = (s != 0);
+			in.read(char_p(&nodes[n].num_terminals), sizeof(nodes[n].num_terminals));
 
 			Count c;
-			in.read(reinterpret_cast<char*>(&c), sizeof(c));
+			in.read(char_p(&c), sizeof(c));
 			nodes[n].children.resize(c);
 			for (size_t c = 0; c < nodes[n].children.size(); ++c) {
-				in.read(reinterpret_cast<char*>(&nodes[n].children[c].second), sizeof(nodes[n].children[c].second));
+				in.read(char_p(&nodes[n].children[c].second), sizeof(nodes[n].children[c].second));
 			}
 		}
 		for (size_t n = 0; n < z; ++n) {
