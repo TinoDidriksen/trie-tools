@@ -447,6 +447,11 @@ public:
 		return rv;
 	}
 
+	traverse_type traverse_end() const {
+		traverse_type rv(npos, false);
+		return rv;
+	}
+
 	browser browse(size_t n=npos) const {
 		return browser(this, static_cast<Count>(n));
 	}

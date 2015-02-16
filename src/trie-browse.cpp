@@ -66,8 +66,12 @@ void trie_browse(const trie_t& trie, std::istream& in, std::ostream& out) {
 		line16.clear();
 		utf8::utf8to16(line8.begin(), line8.end(), std::back_inserter(line16));
 		trie_t::traverse_type tt;
-		for (auto c : line16) {
-			tt = trie.traverse(c, tt.first);
+		for (size_t i = 0; i < line16.size(); ++i) {
+			tt = trie.traverse(line16[i], tt.first);
+			if (tt == trie.traverse_end()) {
+				line8.clear();
+				break;
+			}
 		}
 
 		// If the browse prefix itself is a valid hit, output it before anything else

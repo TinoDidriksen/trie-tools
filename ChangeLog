@@ -1,3 +1,12 @@
+2015-02-16  tino
+
+	* [r10498] ChangeLog, include/tdc_trie.hpp,
+	  include/tdc_trie_mmap.hpp, src/trie-browse.cpp,
+	  src/trie-build.cpp, src/trie-print.cpp,
+	  src/trie-tokenize-apertium.cpp, src/trie-tokenize.cpp: Put index
+	  in file; Re-arrange data to keep 32bit alignment; Bump binary
+	  revision
+
 2015-02-13  tino
 
 	* [r10490] include/tdc_trie.hpp: Update copyright
