@@ -648,7 +648,7 @@ public:
 			}
 			it->second.push_back(i);
 			max_child = std::max(max_child, nodes[i].children.size());
-			BOOST_FOREACH (node_type::children_type::value_type& ch, nodes[i].children) {
+			BOOST_FOREACH (typename node_type::children_type::value_type& ch, nodes[i].children) {
 				parents[ch.second] = i;
 			}
 		}
@@ -663,7 +663,7 @@ public:
 
 			bool did_compress = false;
 
-			BOOST_FOREACH (multichild_type::value_type& mchildren, depth) {
+			BOOST_FOREACH (typename multichild_type::value_type& mchildren, depth) {
 				BOOST_AUTO(&mchild, mchildren.second);
 
 				for (BOOST_AUTO(onode, mchild.begin()); onode != mchild.end(); ++onode) {
