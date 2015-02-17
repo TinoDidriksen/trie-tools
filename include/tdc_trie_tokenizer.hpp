@@ -166,7 +166,7 @@ public:
 		while (std::getline(in, line8)) {
 			// First, trim the UTF-8 since that will catch 99% of whitespace
 			// Trim trailing whitespace
-			while (!line8.empty() && tdc::isspace(line8.back())) {
+			while (!line8.empty() && tdc::isspace(line8[line8.size()-1])) {
 				line8.resize(line8.size() - 1);
 			}
 			// Trim leading whitespace
@@ -187,7 +187,7 @@ public:
 
 			// Now trim the UTF-16 version, just to catch the 1% crazy input that uses Unicode whitespace
 			// Trim trailing whitespace
-			while (!line16.empty() && std::iswspace(line16.back())) {
+			while (!line16.empty() && std::iswspace(line16[line16.size()-1])) {
 				line16.resize(line16.size() - 1);
 			}
 			// Trim leading whitespace
