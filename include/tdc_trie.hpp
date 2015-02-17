@@ -27,9 +27,6 @@ References:
 #ifndef TDC_TRIE_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 #define TDC_TRIE_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 
-#include <boost/typeof/typeof.hpp>
-#include <boost/foreach.hpp>
-
 #include <cstdio>
 #include <stdint.h>
 #include <map>
@@ -642,13 +639,13 @@ public:
 
 		for (size_t i=0 ; i<nodes.size() ; ++i) {
 			multichild_type& mchild = depths[nodes[i].children_depth];
-			BOOST_AUTO(it, lower_bound(mchild, nodes[i].self));
+			auto it = lower_bound(mchild, nodes[i].self);
 			if (it == mchild.end() || it->first != nodes[i].self) {
 				it = mchild.insert(it, std::make_pair(nodes[i].self, std::vector<Count>()));
 			}
 			it->second.push_back(i);
 			max_child = std::max(max_child, nodes[i].children.size());
-			BOOST_FOREACH (typename node_type::children_type::value_type& ch, nodes[i].children) {
+			for (auto& ch : nodes[i].children) {
 				parents[ch.second] = i;
 			}
 		}
@@ -658,21 +655,21 @@ public:
 
 		size_t removed = 0;
 
-		BOOST_FOREACH (multichild_type& depth, depths) {
+		for (auto& depth : depths) {
 			std::cerr << "Handling depth " << (&depth - &depths[0]) << "..." << std::flush;
 
 			bool did_compress = false;
 
-			BOOST_FOREACH (typename multichild_type::value_type& mchildren, depth) {
-				BOOST_AUTO(&mchild, mchildren.second);
+			for (auto& mchildren : depth) {
+				auto& mchild = mchildren.second;
 
-				for (BOOST_AUTO(onode, mchild.begin()); onode != mchild.end(); ++onode) {
+				for (auto onode = mchild.begin(); onode != mchild.end(); ++onode) {
 					if (*onode == 0) {
 						continue;
 					}
 					node_type *first = &nodes[*onode];
 
-					for (BOOST_AUTO(inode, onode + 1); inode != mchild.end(); ++inode) {
+					for (auto inode = onode + 1; inode != mchild.end(); ++inode) {
 						if (*inode == 0) {
 							continue;
 						}

@@ -24,7 +24,6 @@
 #define BOOST_DATE_TIME_NO_LIB 1
 
 #include <tdc_trie.hpp>
-#include <boost/typeof/typeof.hpp>
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
@@ -112,8 +111,8 @@ private:
 			qp.push_back(this);
 
 			const char *p = const_char_p(root.mreg.get_address());
-			BOOST_AUTO(cs, children(p));
-			BOOST_AUTO(cn, num_children(p));
+			auto cs = children(p);
+			auto cn = num_children(p);
 
 			if (pos < entry.size()) {
 				children_type child = findchild(p, root.nodes, cs, cn, entry[pos]);
@@ -223,8 +222,8 @@ public:
 				}
 
 				const char *p = const_char_p(owner->mreg.get_address());
-				BOOST_AUTO(cs, owner->nodes[path.back()].children(p));
-				BOOST_AUTO(cn, owner->nodes[path.back()].num_children(p));
+				auto cs = owner->nodes[path.back()].children(p);
+				auto cn = owner->nodes[path.back()].num_children(p);
 
 				typename trie_node::children_type child = findchild(p, owner->nodes, cs, cn, owner->nodes[old].self(p));
 				++child;
@@ -406,8 +405,8 @@ public:
 	const_iterator find(const String& entry) const {
 		const_iterator rv = end();
 		const char *p = const_char_p(mreg.get_address());
-		BOOST_AUTO(cs, nodes[0].children(p));
-		BOOST_AUTO(cn, nodes[0].num_children(p));
+		auto cs = nodes[0].children(p);
+		auto cn = nodes[0].num_children(p);
 		typename node_type::children_type child = findchild(p, nodes, cs, cn, entry[0]);
 		if (child != cs + cn) {
 			rv.path.clear();
@@ -415,8 +414,8 @@ public:
 			rv.path.push_back(*child);
 			for (size_t i=1 ; i<entry.size() ; ++i) {
 				Count second = *child;
-				BOOST_AUTO(cs, nodes[second].children(p));
-				BOOST_AUTO(cn, nodes[second].num_children(p));
+				auto cs = nodes[second].children(p);
+				auto cn = nodes[second].num_children(p);
 				child = findchild(p, nodes, cs, cn, entry[i]);
 				if (child == cs + cn) {
 					rv = end();
@@ -435,8 +434,8 @@ public:
 		traverse_type rv(npos, false);
 
 		const char *p = const_char_p(mreg.get_address());
-		BOOST_AUTO(cs, nodes[n].children(p));
-		BOOST_AUTO(cn, nodes[n].num_children(p));
+		auto cs = nodes[n].children(p);
+		auto cn = nodes[n].num_children(p);
 
 		typename node_type::children_type child = findchild(p, nodes, cs, cn, c);
 		if (child != cs + cn) {

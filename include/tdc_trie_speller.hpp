@@ -23,7 +23,6 @@
 
 #include <tdc_trie_mmap.hpp>
 #include <utf8.h>
-#include <boost/typeof/typeof.hpp>
 #include <fstream>
 #include <unordered_map>
 #include <cctype>
@@ -271,8 +270,8 @@ protected:
 	struct hash_any_string {
 		size_t operator()(const T& str) const {
 			size_t rv = 104729;
-			for (BOOST_AUTO(c, str.begin()); c != str.end(); ++c) {
-				rv ^= std::hash<wchar_t>()(*c) + 0x9e3779b9 + (rv << 6) + (rv >> 2);
+			for (const auto& c : str) {
+				rv ^= std::hash<wchar_t>()(c) + 0x9e3779b9 + (rv << 6) + (rv >> 2);
 			}
 			return rv;
 		}

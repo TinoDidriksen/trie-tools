@@ -19,8 +19,6 @@
 
 #include <tdc_trie_mmap.hpp>
 #include <utf8.h>
-#include <boost/typeof/typeof.hpp>
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -79,21 +77,21 @@ void trie_browse(const trie_t& trie, std::istream& in, std::ostream& out) {
 		// If the browse prefix itself is a valid hit, output it before anything else
 		if (tt.second) {
 			buffer8 += '"';
-			BOOST_FOREACH (char ch, line8) {
+			for (auto ch : line8) {
 				appendJSON(buffer8, ch);
 			}
 			buffer8 += "\": [\"";
-			BOOST_FOREACH (char ch, line8) {
+			for (auto ch : line8) {
 				appendJSON(buffer8, ch);
 			}
 			buffer8 += "\"], ";
 		}
 
-		BOOST_AUTO(browser, trie.browse(tt.first));
-		for (BOOST_AUTO(it, browser.begin()); it != browser.end(); ++it) {
-			BOOST_AUTO(ch, *it);
+		auto browser = trie.browse(tt.first);
+		for (auto it = browser.begin(); it != browser.end(); ++it) {
+			auto ch = *it;
 			char8.clear();
-			BOOST_FOREACH (char ch, line8) {
+			for (auto ch : line8) {
 				appendJSON(char8, ch);
 			}
 			appendJSON(char8, ch.first);
@@ -102,14 +100,13 @@ void trie_browse(const trie_t& trie, std::istream& in, std::ostream& out) {
 			buffer8 += "\": ";
 			if (ch.second <= 5) {
 				char8.clear();
-				BOOST_AUTO(values, it.values());
-				for (BOOST_AUTO(trail, values.begin()); trail != values.end(); ++trail) {
+				for (auto trail : it.values()) {
 					char8 += '"';
-					BOOST_FOREACH (char ch, line8) {
+					for (auto ch : line8) {
 						appendJSON(char8, ch);
 					}
 					appendJSON(char8, ch.first);
-					BOOST_FOREACH (uint16_t ch, *trail) {
+					for (auto ch : trail) {
 						appendJSON(char8, ch);
 					}
 					char8 += "\", ";
