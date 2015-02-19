@@ -42,6 +42,7 @@ public:
 		}
 		msg += "strerror: ";
 		msg += strerror(errno);
+		return msg;
 	}
 
 	void is_correct_word(std::string& cbuffer) {
