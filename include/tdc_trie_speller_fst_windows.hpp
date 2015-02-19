@@ -24,7 +24,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <exception>
+#include <stdexcept>
 #include <windows.h>
 
 namespace tdc {

@@ -24,7 +24,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <exception>
+#include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include <popen_plus.h>
