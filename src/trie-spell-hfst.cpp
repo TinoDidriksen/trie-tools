@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 	std::cin.sync_with_stdio(false);
 	std::cout.sync_with_stdio(false);
 
-	tdc::trie_speller_fst speller("flookup -b -x '%s'", args[1], args[2]);
+	tdc::trie_speller_fst speller("hfst-optimized-lookup -f '%s'", args[1], args[2]);
 
 	speller.ispell_stream_utf8(std::cin, std::cout);
 }

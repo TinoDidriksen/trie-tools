@@ -43,6 +43,7 @@ set(TRIE ../include/tdc_trie.hpp)
 set(TRIE_MMAP ${TRIE} ../include/tdc_trie_mmap.hpp)
 set(TRIE_SPELL ../include/tdc_trie_speller.hpp)
 set(TRIE_TOKENIZE ../include/tdc_trie_tokenizer.hpp)
+set(TRIE_SPELL_FST ${TRIE_SPELL} ../include/tdc_trie_speller_fst.hpp ../include/tdc_trie_speller_fst_posix.hpp ../include/tdc_trie_speller_fst_windows.hpp)
 
 add_executable(trie-build trie-build.cpp ${UTF8} ${TRIE})
 link_helper(trie-build)
@@ -62,8 +63,11 @@ link_helper(trie-tokenize-apertium)
 add_executable(trie-spell trie-spell.cpp ${UTF8} ${TRIE_MMAP} ${TRIE_SPELL})
 link_helper(trie-spell)
 
-add_executable(trie-spell-foma trie-spell-foma.cpp ${UTF8} ${TRIE_MMAP} ${TRIE_SPELL} ${POPEN_PLUS_C})
+add_executable(trie-spell-foma trie-spell-foma.cpp ${UTF8} ${TRIE_MMAP} ${TRIE_SPELL_FST} ${POPEN_PLUS_C})
 link_helper(trie-spell-foma)
+
+add_executable(trie-spell-hfst trie-spell-hfst.cpp ${UTF8} ${TRIE_MMAP} ${TRIE_SPELL_FST} ${POPEN_PLUS_C})
+link_helper(trie-spell-hfst)
 
 install(TARGETS
 	trie-build
@@ -73,4 +77,5 @@ install(TARGETS
 	trie-tokenize-apertium
 	trie-spell
 	trie-spell-foma
+	trie-spell-hfst
 	RUNTIME DESTINATION bin)
