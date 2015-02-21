@@ -1,5 +1,33 @@
+2015-02-19  tino
+
+	* [r10523] include/tdc_trie_speller_fst_posix.hpp: Forgot return
+	* [r10522] include/tdc_trie_speller_fst.hpp,
+	  include/tdc_trie_speller_fst_posix.hpp,
+	  include/tdc_trie_speller_fst_windows.hpp: exception -> stdexcept
+	* [r10521] include/tdc_trie_speller_fst.hpp,
+	  include/tdc_trie_speller_fst_posix.hpp,
+	  include/tdc_trie_speller_fst_windows.hpp, src/CMakeLists.txt,
+	  src/trie-spell-foma.cpp, src/trie-spell-hfst.cpp: Add
+	  hfst-optimized-lookup frontend; Split and reuse FST handler
+
+2015-02-17  tino
+
+	* [r10512] include/tdc_trie.hpp, include/tdc_trie_mmap.hpp,
+	  include/tdc_trie_speller.hpp, include/tdc_trie_tokenizer.hpp,
+	  src/trie-browse.cpp: Roll back to C++11 code - too bad for
+	  CentOS/RHEL 6
+	* [r10511] include/tdc_trie_tokenizer.hpp: Downgrade to C++98
+	  compatible code
+	* [r10510] include/tdc_trie_speller.hpp, src/trie-browse.cpp:
+	  Downgrade to C++98 compatible code
+	* [r10509] include/tdc_trie.hpp: Missing typename
+	* [r10508] include/tdc_trie.hpp: Downgrade to C++98 compatible code
+
 2015-02-16  tino
 
+	* [r10503] ChangeLog, include/tdc_trie.hpp,
+	  include/tdc_trie_mmap.hpp, src/trie-browse.cpp: Traverse aborts
+	  early and resets if a path cannot be found
 	* [r10498] ChangeLog, include/tdc_trie.hpp,
 	  include/tdc_trie_mmap.hpp, src/trie-browse.cpp,
 	  src/trie-build.cpp, src/trie-print.cpp,

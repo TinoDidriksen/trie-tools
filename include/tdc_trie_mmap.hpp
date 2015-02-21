@@ -50,7 +50,7 @@ inline T findchild(const char *p, const NS& nodes, const T& t, size_t n, const Y
 		it = first;
 		step = count / 2;
 		it += step;
-		if (nodes[*it].self(p) < y) {
+		if (nodes[bswap(*it)].self(p) < y) {
 			first = ++it;
 			count -= step + 1;
 		}
@@ -58,7 +58,7 @@ inline T findchild(const char *p, const NS& nodes, const T& t, size_t n, const Y
 			count = step;
 		}
 	}
-	if (first != t + n && nodes[*first].self(p) != y) {
+	if (first != t + n && nodes[bswap(*first)].self(p) != y) {
 		first = t + n;
 	}
 	return first;
@@ -83,11 +83,11 @@ private:
 		}
 
 		typename String::value_type self(const char *p) const {
-			return *reinterpret_cast<const uint16_t*>(p + n);
+			return bswap(*reinterpret_cast<const uint16_t*>(p + n));
 		}
 
 		Count num_terminals(const char *p) const {
-			return *reinterpret_cast<const Count*>(p + n + sizeof(uint16_t) + sizeof(uint16_t));
+			return bswap(*reinterpret_cast<const Count*>(p + n + sizeof(uint16_t) + sizeof(uint16_t)));
 		}
 
 		children_type children(const char *p) const {
@@ -95,7 +95,7 @@ private:
 		}
 
 		Count num_children(const char *p) const {
-			return *reinterpret_cast<const Count*>(p + n + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(Count));
+			return bswap(*reinterpret_cast<const Count*>(p + n + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(Count)));
 		}
 
 		void buildString(const char *p, const query_path_type& qp, String& in) const {
@@ -117,19 +117,19 @@ private:
 			if (pos < entry.size()) {
 				children_type child = findchild(p, root.nodes, cs, cn, entry[pos]);
 				if (child != cs + cn) {
-					root.nodes[*child].query(root, entry, pos+1, collected, qp, maxdist, curdist);
+					root.nodes[bswap(*child)].query(root, entry, pos+1, collected, qp, maxdist, curdist);
 				}
 			}
 
 			if (curdist < maxdist) {
 				for (children_type child = cs ; child != cs + cn ; ++child) {
-					if (pos >= entry.size() || root.nodes[*child].self(p) != entry[pos]) {
-						root.nodes[*child].query(root, entry, pos, collected, qp, maxdist, curdist+1);
-						root.nodes[*child].query(root, entry, pos+1, collected, qp, maxdist, curdist+1);
+					if (pos >= entry.size() || root.nodes[bswap(*child)].self(p) != entry[pos]) {
+						root.nodes[bswap(*child)].query(root, entry, pos, collected, qp, maxdist, curdist+1);
+						root.nodes[bswap(*child)].query(root, entry, pos+1, collected, qp, maxdist, curdist+1);
 					}
 					for (size_t i = 1 ; pos+i < entry.size() ; ++i) {
-						if (root.nodes[*child].self(p) == entry[pos + i]) {
-							root.nodes[*child].query(root, entry, pos+i+1, collected, qp, maxdist, curdist+i);
+						if (root.nodes[bswap(*child)].self(p) == entry[pos + i]) {
+							root.nodes[bswap(*child)].query(root, entry, pos+i+1, collected, qp, maxdist, curdist+i);
 						}
 					}
 				}
@@ -185,7 +185,7 @@ public:
 			const char *p = const_char_p(owner->mreg.get_address());
 			if (owner && n < owner->size() && !owner->nodes[n].terminal(p)) {
 				while (owner->nodes[n].num_children(p)) {
-					n = *owner->nodes[n].children(p);
+					n = bswap(*owner->nodes[n].children(p));
 					path.push_back(n);
 				}
 			}
@@ -228,10 +228,10 @@ public:
 				typename trie_node::children_type child = findchild(p, owner->nodes, cs, cn, owner->nodes[old].self(p));
 				++child;
 				if (child != cs + cn) {
-					Count n = *child;
+					Count n = bswap(*child);
 					path.push_back(n);
 					while (owner->nodes[n].num_children(p)) {
-						n = *owner->nodes[n].children(p);
+						n = bswap(*owner->nodes[n].children(p));
 						path.push_back(n);
 					}
 					goto plus_return;
@@ -344,8 +344,7 @@ public:
 		}
 		reg += 4;
 
-		uint32_t rev = 0;
-		memcpy(&rev, reg, sizeof(rev));
+		auto rev = read<uint32_t>(reg);
 		if (rev != TRIE_SERIALIZED_REVISION) {
 			char _msg[] = "Unserialize expected revision %u but data had revision %u";
 			std::string msg(sizeof(_msg) + 11 + 11 + 1, 0);
@@ -354,8 +353,7 @@ public:
 		}
 		reg += sizeof(rev);
 
-		uint16_t s;
-		memcpy(&s, reg, sizeof(s));
+		auto s = read<uint16_t>(reg);
 		if (s != sizeof(typename String::value_type)) {
 			char _msg[] = "Unserialize expected code unit width %u but data had width %u";
 			std::string msg(sizeof(_msg) + 11 + 11 + 1, 0);
@@ -365,15 +363,14 @@ public:
 		reg += sizeof(s);
 		reg += sizeof(s); // Compressed flag
 
-		memcpy(&num_nodes, reg, sizeof(num_nodes));
+		read(reg, num_nodes);
 		reg += sizeof(num_nodes);
 		for (size_t n = 0; n < num_nodes; ++n) {
 			reg += sizeof(s); // self
 			reg += sizeof(s); // terminal
 			reg += sizeof(Count); // num_terminals
 
-			Count c;
-			memcpy(&c, reg, sizeof(c));
+			auto c = read<Count>(reg);
 			reg += sizeof(c);
 			reg += c*sizeof(Count); // children
 		}
@@ -413,7 +410,7 @@ public:
 			rv.path.push_back(0);
 			rv.path.push_back(*child);
 			for (size_t i=1 ; i<entry.size() ; ++i) {
-				Count second = *child;
+				Count second = bswap(*child);
 				auto cs = nodes[second].children(p);
 				auto cn = nodes[second].num_children(p);
 				child = findchild(p, nodes, cs, cn, entry[i]);
@@ -439,7 +436,7 @@ public:
 
 		typename node_type::children_type child = findchild(p, nodes, cs, cn, c);
 		if (child != cs + cn) {
-			rv.first = *child;
+			rv.first = bswap(*child);
 			rv.second = nodes[rv.first].terminal(p);
 		}
 

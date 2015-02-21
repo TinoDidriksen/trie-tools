@@ -68,7 +68,7 @@ public:
 			msg += cmdline.c_str();
 			msg += '\n';
 			msg = formatLastError(msg);
-			throw std::runtime_error(msg.c_str());
+			throw std::runtime_error(msg);
 		}
 	}
 

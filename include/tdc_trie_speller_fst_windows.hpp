@@ -54,22 +54,22 @@ public:
 		DWORD bytes = 0, bytes_read = 0;
 		if (!WriteFile(g_hChildStd_IN_Wr, cbuffer.c_str(), (DWORD)cbuffer.length(), &bytes, 0) || bytes != cbuffer.length()) {
 			std::string msg = formatLastError("is_correct_word WriteFile");
-			throw std::runtime_error(msg.c_str());
+			throw std::runtime_error(msg);
 		}
 		cbuffer.resize(4);
 		if (!ReadFile(g_hChildStd_OUT_Rd, &cbuffer[0], 4, &bytes_read, 0) || bytes_read != 4) {
 			std::string msg = formatLastError("is_correct_word ReadFile 1");
-			throw std::runtime_error(msg.c_str());
+			throw std::runtime_error(msg);
 		}
 		if (!PeekNamedPipe(g_hChildStd_OUT_Rd, 0, 0, 0, &bytes, 0)) {
 			std::string msg = formatLastError("is_correct_word PeekNamedPipe");
-			throw std::runtime_error(msg.c_str());
+			throw std::runtime_error(msg);
 		}
 		if (bytes) {
 			cbuffer.resize(4+bytes);
 			if (!ReadFile(g_hChildStd_OUT_Rd, &cbuffer[4], bytes, &bytes_read, 0) || bytes != bytes_read) {
 				std::string msg = formatLastError("is_correct_word ReadFile 2");
-				throw std::runtime_error(msg.c_str());
+				throw std::runtime_error(msg);
 			}
 		}
 	}
@@ -84,19 +84,19 @@ public:
 
 		if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0)) {
 			std::string msg = formatLastError("SpellerInit CreatePipe 1");
-			throw std::runtime_error(msg.c_str());
+			throw std::runtime_error(msg);
 		}
 		if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0)) {
 			std::string msg = formatLastError("SpellerInit SetHandleInformation 1");
-			throw std::runtime_error(msg.c_str());
+			throw std::runtime_error(msg);
 		}
 		if (!CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &saAttr, 0)) {
 			std::string msg = formatLastError("SpellerInit CreatePipe 2");
-			throw std::runtime_error(msg.c_str());
+			throw std::runtime_error(msg);
 		}
 		if (!SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0)) {
 			std::string msg = formatLastError("SpellerInit SetHandleInformation 2");
-			throw std::runtime_error(msg.c_str());
+			throw std::runtime_error(msg);
 		}
 
 		PROCESS_INFORMATION piProcInfo = {0};
@@ -126,7 +126,7 @@ public:
 			msg += cmdline.c_str();
 			msg += '\n';
 			msg = formatLastError(msg);
-			throw std::runtime_error(msg.c_str());
+			throw std::runtime_error(msg);
 		}
 
 		CloseHandle(piProcInfo.hProcess);

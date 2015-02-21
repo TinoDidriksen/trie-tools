@@ -27,6 +27,7 @@ References:
 #ifndef TDC_TRIE_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 #define TDC_TRIE_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 
+#include <boost/detail/endian.hpp>
 #include <cstdio>
 #include <stdint.h>
 #include <map>
@@ -43,7 +44,7 @@ const char* const TRIE_COPYRIGHT_STRING = "Copyright (C) 2013-2015 Tino Didrikse
 const uint32_t TRIE_VERSION_MAJOR = 0;
 const uint32_t TRIE_VERSION_MINOR = 8;
 const uint32_t TRIE_VERSION_PATCH = 2;
-const uint32_t TRIE_REVISION = 10503;
+const uint32_t TRIE_REVISION = 10538;
 const uint32_t TRIE_SERIALIZED_REVISION = 10498;
 
 typedef std::basic_string<uint8_t> u8string;
@@ -62,6 +63,56 @@ inline const char *const_char_p(T t) {
 template<typename T>
 inline char *char_p(T t) {
 	return reinterpret_cast<char*>(t);
+}
+
+#ifdef BOOST_BIG_ENDIAN
+inline uint32_t bswap(uint32_t v) {
+	return (v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24);
+}
+inline uint16_t bswap(uint16_t v) {
+	return (v >> 8) | (v << 8);
+}
+#else
+inline uint32_t bswap(uint32_t v) {
+	return v;
+}
+inline uint16_t bswap(uint16_t v) {
+	return v;
+}
+#endif
+
+template<typename T>
+inline void write(std::ostream& out, T v) {
+	v = bswap(v);
+	out.write(const_char_p(&v), sizeof(v));
+}
+
+template<typename T>
+inline void read(std::istream& in, T& v) {
+	in.read(char_p(&v), sizeof(v));
+	v = bswap(v);
+}
+
+template<typename T>
+inline T read(std::istream& in) {
+	T v;
+	in.read(char_p(&v), sizeof(v));
+	v = bswap(v);
+	return v;
+}
+
+template<typename T>
+inline void read(const char *in, T& v) {
+	memcpy(&v, in, sizeof(v));
+	v = bswap(v);
+}
+
+template<typename T>
+inline T read(const char *in) {
+	T v;
+	memcpy(&v, in, sizeof(v));
+	v = bswap(v);
+	return v;
 }
 
 template<typename T, typename Y>
@@ -449,28 +500,27 @@ public:
 
 		const char *trie = "TRIE";
 		out.write(trie, 4);
-		out.write(const_char_p(&TRIE_SERIALIZED_REVISION), sizeof(TRIE_SERIALIZED_REVISION));
+		write(out, TRIE_SERIALIZED_REVISION);
 
 		uint16_t z = sizeof(typename String::value_type);
-		out.write(const_char_p(&z), sizeof(z));
+		write(out, z);
 
 		z = compressed;
-		out.write(const_char_p(&z), sizeof(z));
+		write(out, z);
 
 		Count value = static_cast<Count>(nodes.size());
-		out.write(const_char_p(&value), sizeof(value));
+		write(out, value);
 		for (size_t n = 0; n<nodes.size(); ++n) {
-			ofs[n] = static_cast<Count>(out.tellp());
+			ofs[n] = bswap(static_cast<Count>(out.tellp()));
 			z = nodes[n].self;
-			out.write(const_char_p(&z), sizeof(z));
+			write(out, z);
 			z = nodes[n].terminal;
-			out.write(const_char_p(&z), sizeof(z));
-			out.write(const_char_p(&nodes[n].num_terminals), sizeof(nodes[n].num_terminals));
+			write(out, z);
+			write(out, nodes[n].num_terminals);
 
-			Count value = static_cast<Count>(nodes[n].children.size());
-			out.write(const_char_p(&value), sizeof(value));
+			write(out, static_cast<Count>(nodes[n].children.size()));
 			for (size_t c = 0; c<nodes[n].children.size(); ++c) {
-				out.write(const_char_p(&nodes[n].children[c].second), sizeof(nodes[n].children[c].second));
+				write(out, nodes[n].children[c].second);
 			}
 		}
 		out.write(const_char_p(ofs.data()), ofs.size()*sizeof(Count));
@@ -485,8 +535,7 @@ public:
 			throw std::runtime_error("Unserialize stream did not start with magic byte sequence TRIE");
 		}
 
-		uint32_t rev = 0;
-		in.read(char_p(&rev), sizeof(rev));
+		auto rev = read<uint32_t>(in);
 		if (rev != TRIE_SERIALIZED_REVISION) {
 			char _msg[] = "Unserialize expected revision %u but data had revision %u";
 			std::string msg(sizeof(_msg)+11 + 11 + 1, 0);
@@ -494,8 +543,7 @@ public:
 			throw std::runtime_error(msg);
 		}
 
-		uint16_t s;
-		in.read(char_p(&s), sizeof(s));
+		auto s = read<uint16_t>(in);
 		if (s != sizeof(typename String::value_type)) {
 			char _msg[] = "Unserialize expected code unit width %u but data had width %u";
 			std::string msg(sizeof(_msg)+11 + 11 + 1, 0);
@@ -503,24 +551,22 @@ public:
 			throw std::runtime_error(msg);
 		}
 
-		in.read(char_p(&s), sizeof(s));
+		read(in, s);
 		compressed = (s != 0);
 
-		Count z;
-		in.read(char_p(&z), sizeof(z));
+		auto z = read<Count>(in);
 		nodes.resize(z);
 		for (size_t n = 0; n < z; ++n) {
-			in.read(char_p(&s), sizeof(s));
+			read(in, s);
 			nodes[n].self = static_cast<typename String::value_type>(s);
-			in.read(char_p(&s), sizeof(s));
+			read(in, s);
 			nodes[n].terminal = (s != 0);
-			in.read(char_p(&nodes[n].num_terminals), sizeof(nodes[n].num_terminals));
+			read(in, nodes[n].num_terminals);
 
-			Count c;
-			in.read(char_p(&c), sizeof(c));
+			auto c = read<Count>(in);
 			nodes[n].children.resize(c);
 			for (size_t c = 0; c < nodes[n].children.size(); ++c) {
-				in.read(char_p(&nodes[n].children[c].second), sizeof(nodes[n].children[c].second));
+				read(in, nodes[n].children[c].second);
 			}
 		}
 		for (size_t n = 0; n < z; ++n) {
