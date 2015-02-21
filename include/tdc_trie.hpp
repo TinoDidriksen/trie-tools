@@ -29,6 +29,7 @@ References:
 
 #include <boost/detail/endian.hpp>
 #include <cstdio>
+#include <cstring>
 #include <stdint.h>
 #include <map>
 #include <vector>
