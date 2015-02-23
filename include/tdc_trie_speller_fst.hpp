@@ -21,7 +21,7 @@
 #ifndef TRIE_SPELL_FST_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 #define TRIE_SPELL_FST_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 	#include <tdc_trie_speller_fst_windows.hpp>
 #else
 	#include <tdc_trie_speller_fst_posix.hpp>

@@ -16,7 +16,7 @@ endif()
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
-if(NOT MSVC)
+if(NOT WIN32)
 	set(POPEN_PLUS_C ../posix/popen_plus.c ../posix/popen_plus.h)
 endif()
 
