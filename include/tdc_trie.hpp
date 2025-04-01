@@ -27,7 +27,7 @@ References:
 #ifndef TDC_TRIE_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 #define TDC_TRIE_HPP_f28c53c53a48d38efafee7fb7004a01faaac9e22
 
-#include <boost/detail/endian.hpp>
+#include <boost/endian.hpp>
 #include <cstdio>
 #include <cstring>
 #include <stdint.h>
